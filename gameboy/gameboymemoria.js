@@ -108,6 +108,7 @@ class Memoria{
         this.activadoRAM = true;
         // 2000–3FFF — Numero de banco ROM (Solo escritura)
         this.numeroBancoROM = 0x01;
+        this.numeroBancoROMAlto = 0x00;
         this.bitsNecesariosBancoROM = 0x02 // Bits necesarios para representar el banco
         // 4000–5FFF — Numero de banco RAM — o — Upper Bits del Numero de banco ROM (Solo escritura)
         this.numeroBancoRAM = 0x00;
@@ -379,11 +380,29 @@ class Memoria{
         
         // 0000-3FFF - 16 KiB ROM bank 00
         if(indice >= 0x0000  && indice <= 0x3FFF){
-            if(bootROM){
-                if(indice < 0x100){ lectura = bootROM[indice]; }
-                else{ lectura = this.rOM[indice]; }
-            } else{
-                lectura = this.rOM[indice];
+            if(this.tipoMBC == MBC1){
+                if(this.modoBanco == 1){
+                    if(bootROM){
+                        if(indice < 0x100){ lectura = bootROM[indice]; }
+                        else{ lectura = this.rOM[indice]; }
+                    } else{
+                        lectura = this.rOM[((this.numeroBancoROMAlto << 5) * 0x4000) + indice];
+                    }
+                } else {
+                    if(bootROM){
+                        if(indice < 0x100){ lectura = bootROM[indice]; }
+                        else{ lectura = this.rOM[indice]; }
+                    } else{
+                        lectura = this.rOM[indice];
+                    }
+                }
+            } else {
+                if(bootROM){
+                    if(indice < 0x100){ lectura = bootROM[indice]; }
+                    else{ lectura = this.rOM[indice]; }
+                } else{
+                    lectura = this.rOM[indice];
+                }
             }
         }
         // 4000-7FFF - 16 KiB ROM Bank 01~NN
@@ -575,15 +594,16 @@ class Memoria{
             // 4000–5FFF — Numero de Banco de RAM o Bits altos del numero de banco ROM (Solo escritura)
             else if(indice >= 0x4000 && indice <= 0x5FFF){
                 // Se utiliza para seleccionar el banco de RAM en los cartuchos con 32KiB
-                if(this.tamanyoRAM == 0x8000){
+                if(this.tamanyoRAM >= 0x8000){
                     this.numeroBancoRAM = dato & 0x03;
                     //console.log("MBC1 Se cambia el banco RAM a " + this.numeroBancoRAM);
                 }
                 // O se utiliza para seleccionar los 2 bits mas significantes (5,6) del
                 // banco de ROM si es un cartucho con 1MiB o mas.
                 else if(this.tamanyoROM >= 0x100000){
-
-                    this.numeroBancoROM = (this.numeroBancoROM & 0x1F) + ((dato & 0x03) << 5);
+                    this.numeroBancoROMAlto = (dato & 0x03)
+                    this.numeroBancoROM = (this.numeroBancoROM & 0x1F) 
+                                            + (numeroBancoROMAlto << 5);
                     if(this.numeroBancoROM == 0) this.numeroBancoROM = 0x01;
                     this.numeroBancoROM &= this.mascaraBitsNecesariosBancosROM;
                     //console.log("MBC1 Se cambia el banco (bits altos) ROM a " + this.numeroBancoROM);
@@ -596,12 +616,9 @@ class Memoria{
             // 6000–7FFF — Banking Mode Select (Write Only)
             else if(indice >= 0x6000  && indice <= 0x7FFF){
                 // 
-                if(this.tamanyoROM <= 0x80000)
-                    return;
-                else{
-                    if(dato & 0x01  == 0) this.modoBanco = 0;
-                    else this.modoBanco = 1;
-                }
+                if(dato & 0x01  == 0) this.modoBanco = 0;
+                else this.modoBanco = 1;
+                console.log("BANCO: " + this.modoBanco);
             }
         }
         // https://gbdev.io/pandocs/MBC2.html
@@ -751,12 +768,9 @@ class Memoria{
             // 6000–7FFF — Banking Mode Select (Write Only)
             else if(indice >= 0x6000  && indice <= 0x7FFF){
                 // 
-                if(this.tamanyoROM <= 0x80000)
-                    return;
-                else{
-                    if(dato == 0) this.modoBanco = 0;
-                    else if (dato == 1 ) this.modoBanco = 1;
-                }
+                if(dato & 0x01  == 0) this.modoBanco = 0;
+                else this.modoBanco = 1;
+                console.log("BANCO: " + this.modoBanco);
             }
         }
 

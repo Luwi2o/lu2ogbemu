@@ -73,9 +73,8 @@ class Gameboy{
 
         this.tiempoAhora = performance.now();
         var diferencia = this.tiempoAhora - this.tiempoAntes;
-        var contadorCiclos = 0;
 
-        if(diferencia > 1000/70){
+        if(diferencia > 1000/60){
             this.pantalla.terminada = false;
             while(!this.pantalla.terminada && !this.cPUDebug.pausado){
                 this.cpu.ciclo();

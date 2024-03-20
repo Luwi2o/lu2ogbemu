@@ -82,6 +82,8 @@ class Pantalla{
             }
         }
 
+        if(this.regLCD.windowX <= 7) this.regLCD.condicionWX = true;
+
         for(var x = 0; x < GB_PANTALLA_ANCHO; x++){
             var tileX = 0;
             var tileY = 0;
@@ -198,7 +200,7 @@ class Pantalla{
 
                 // Se elige el color del valor
                 if(dentroDeVentana){
-                    pixel = this.regLCD.valorColor[this.regLCD.paletaBGVent[indicePaleta]];
+                    pixel = this.regLCD.valorColorRojo[this.regLCD.paletaBGVent[indicePaleta]];
                 }
                 else{
                     pixel = this.regLCD.valorColor[this.regLCD.paletaBGVent[indicePaleta]];
@@ -285,6 +287,13 @@ class Pantalla{
             this.lcd.data[ indiceCanvas + 1] = pixel[1];
             this.lcd.data[ indiceCanvas + 2] = pixel[2];
             this.lcd.data[ indiceCanvas + 3] = pixel[3];
+
+            if(this.regLCD.lineaY == 79){
+                this.lcd.data[ indiceCanvas ] = 10;
+                this.lcd.data[ indiceCanvas + 1] = 100;
+                this.lcd.data[ indiceCanvas + 2] = 10;
+                this.lcd.data[ indiceCanvas + 3] = 255;
+            }
 
         }
     }
@@ -384,7 +393,7 @@ class Pantalla{
                         this.regLCD.LYCLYFlag = true;
                         // Si esta activada la interrupcion en LYC=LY
                         if(this.regLCD.interrupcionEstadoEnLYCLY){
-                            console.log("interrupcion LYCLY")
+                            console.log("interrupcion LYCLY " + this.regLCD.lineaY)
                             // Se pide una interrupcion de lcdstat
                             this.ints.regs.flagsInterrupcion[LCDSTAT_INT] = true;
                         }

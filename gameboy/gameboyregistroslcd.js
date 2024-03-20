@@ -149,7 +149,7 @@ class RegistrosLCD {
         this.BGTileMapArea = (dato & 0x08) == 0x08; // Bit 3
         this.tamanyoObjeto = (dato & 0x04) == 0x04; // Bit 2
         this.objEnable = (dato & 0x02) == 0x02; // Bit 1
-        this.BGWindowEnable = (dato & 0x01) == 0x01; // Bit 0 
+        this.BGWindowEnable = (dato & 0x01) == 0x01; // Bit 0
     }
 
     iniciarLCDControl(dato){
