@@ -69,6 +69,26 @@ document.getElementById("archivo-rom").addEventListener('change', function() {
             a.click()
         })
 
+        document.getElementById('ocultar-debug').addEventListener("click", function(e) {
+            if(debug.pausado){
+                // Continuar debug
+                console.log("ABRIENDO DEBUG")
+                debug.continuar();
+                [].forEach.call(document.querySelectorAll('.ventana-debug'), function (el) {
+                    el.style.display = 'inline-flex';
+                });
+                document.getElementById('ocultar-debug').innerText = "cerrar debug";
+            } else {
+                // Ocultar debug
+                console.log("CERRANDO DEBUG")
+                debug.pausar();
+                [].forEach.call(document.querySelectorAll('.ventana-debug'), function (el) {
+                    el.style.display = 'none';
+                });
+                document.getElementById('ocultar-debug').innerText = "abrir debug";
+            }
+        })
+
 
     }
     reader.readAsArrayBuffer(this.files[0]);

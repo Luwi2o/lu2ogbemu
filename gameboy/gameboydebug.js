@@ -3,10 +3,8 @@ class Debug{
     constructor(gameboy){
         this.canvas = document.getElementById("gameboy-debug-canvas");
         this.contexto = this.canvas.getContext("2d", { alpha: false });
-        this.width = this.canvas.width;
-        this.height = this.canvas.height;
         this.gameboy = gameboy;
-        this.lineY = 0;
+        this.pausado = false;
 
         document.getElementById("boton-paso").addEventListener("mousedown", ()=>{
             if(this.gameboy.cPUDebug.pausado){
@@ -34,63 +32,18 @@ class Debug{
 
     }
 
+    pausar(){
+        this.pausado = true;
+    }
 
+    continuar(){
+        this.pausado = false;
+    }
     
     empezar(){
 
         var gameboy = this.gameboy;
-        var contexto = this.contexto;
-
-        function crearImagenVRAM(){
-
-            var lineY = 0;
-            
-            for(var y = 0; y < GB_PANTALLA_ALTO; y++){
-                for(var x = 0; x < GB_PANTALLA_ANCHO; x++){
-                    lineY = y;
-                    var pixel = 0;
-                    var tileMapInicio = 0x9800;
-                    //(byte 8 bits), 16bits *
-                    //var fetchX = (Math.floor(0 / 8) + x) & 0x1F;
-                    //var fetchY = (y + 0) & 255
-
-                    //var dirTileFetch = tileMapInicio + (fetchY * 255) + fetchX;
-                    var dirTileFetch = Math.floor(x / 8)// + (32) * y
-                    var tileFetch = gameboy.memoria.leer8Bits(tileMapInicio + dirTileFetch);
-
-                    //Check LCDC.4 for which tilemap to use. Once the tilemap, 
-                    //VRAM and vertical flip is calculated the tile data is retrieved from VRAM.
-                    //However, if the PPU’s access to VRAM is blocked then the tile data is read as $FF.
-                    //The tile data retrieved in this step will be used in the push steps.
-                    //BG and Window tile data area
-                    var fuckX = (Math.floor( (x*2) / 16) * 16)
-                    var fuckY = (y*2) % 16 + Math.floor(y/8) * (32 * 10)
-                    var fuck = fuckX + fuckY
-                    var tileDataLowFetch = gameboy.memoria.leer8Bits(tileFetch);
-                    var tileDataHighFetch = gameboy.memoria.leer8Bits(tileFetch + 1);
-                    var tileDataLowFetch = gameboy.memoria.leer8Bits(0x8360 + fuck );
-                    var tileDataHighFetch = gameboy.memoria.leer8Bits(0x8360 + fuck + 1 );
-                    //if(tileDataHighFetch > 0)console.log("ha dibujado ALGO")
-
-                    pixel = 0;
-                    if((tileDataLowFetch & (0x80 >> (x % 8))) != 0) pixel += 0x01;
-                    if((tileDataHighFetch & (0x80 >> (x % 8))) != 0) pixel += 0x02;
-
-                    switch(pixel){
-                        case 0: contexto.fillStyle = '#000000'; break;
-                        case 1: contexto.fillStyle = '#888888'; break;
-                        case 2: contexto.fillStyle = '#CCCCCC'; break;
-                        case 3: contexto.fillStyle = '#FFFFFF'; break;
-                        default: console.error("Error dibujando, tipo de pixel no valido")
-                    }
-                    contexto.fillRect(x * GB_PANTALLA_ESCALADO, y * GB_PANTALLA_ESCALADO,
-                        GB_PANTALLA_ESCALADO, GB_PANTALLA_ESCALADO);
-                    
-                }
-            }
-            for(var y = 144; y < 153; y++){
-            }
-        }
+        var debug = this;
 
         function mostrarRegistrosCPU(){
             document.getElementById("regAF").innerHTML =
@@ -219,17 +172,22 @@ class Debug{
             document.getElementById("memoria").innerHTML = memoriaStr;
         }
 
-        var renderVRAM = function(){
+        var dibujarDebug = function(){
             setTimeout(function() {
-                window.requestAnimationFrame(renderVRAM);
+
+                window.requestAnimationFrame(dibujarDebug);
+
+                if(debug.pausado) return;
 
                 mostrarPila()
+                /*
                 document.getElementById("gameboy-debug-logs").innerHTML = 
                     gameboy.cPUDebug.instruccionPC + ": codigo: " +gameboy.cPUDebug.codigoStr + 
                     ", instr: " + gameboy.cPUDebug.instruccionStr + "</br>" +
                     gameboy.cPUDebug.flagsStr + "</br>" +
                     gameboy.cPUDebug.registrosStr + " " +  gameboy.cPUDebug.registros16Str + "</br>" +
                     gameboy.memoria.memoriaStr + "</br>"
+                */
                 
                 document.getElementById("instruccion").innerHTML = gameboy.cPUDebug.instruccionPC + 
                     ": codigo: " +gameboy.cPUDebug.codigoStr + ", instr: " + gameboy.cPUDebug.instruccionStr;
@@ -250,7 +208,7 @@ class Debug{
             }, 100)
         }
 
-        renderVRAM(0)
+        dibujarDebug(0)
     }
 
 }

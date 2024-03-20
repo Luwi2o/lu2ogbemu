@@ -46,6 +46,7 @@ class RegistrosLCD {
         ]
 
 
+        // https://gbdev.io/pandocs/Palettes.html#ff47--bgp-non-cgb-mode-only-bg-palette-data
         this.paletaBGVent = [0, 1, 2, 3];
         // https://gbdev.io/pandocs/Palettes.html#ff48ff49--obp0-obp1-non-cgb-mode-only-obj-palette-0-1-data
         this.paletaObj0 = [0, 1, 2, 3];

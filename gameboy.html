@@ -28,7 +28,7 @@
                 </div>
                 <input id="archivo-rom" class="row" type="file" style="display:none;" accept=".gb">
                 <!--<input id="estado" class="row" type="file">-->
-                <button class="boton" id="boton-cargar-rom" name="button" value="Upload" 
+                <button class="boton" id="boton-cargar-rom" name="button" value="upload" 
                     onclick="cargarArchivoROM();">cargar archivo rom .gb</button>
                 <input class="row" type="range" id="volumen">
                 <div>
@@ -38,12 +38,13 @@
                     <button class="boton" id="boton-descargar-guardado">guardar .sav</button>
                 </div>
                 <input id="archivo-boot" class="row" type="file" style="display:none;" accept=".bin">
-                <button class="boton" id="boton-cargar-boot" name="button" value="Upload" 
+                <button class="boton" id="boton-cargar-boot" name="button" value="upload" 
                     onclick="cargarArchivoBoot();">cargar archivo boot rom .gb</button>
+                <button class="boton" id="ocultar-debug" name="button">cerrar debug</button>
             </div>
             
             <!-- REGISTROS -->
-            <div class="columns component-container">
+            <div class="ventana-debug columns component-container">
                 <div class="register-container">
                     <div class="register">
                         <div class="register">af</div><div id="regAF" class="register">/</div>
@@ -77,7 +78,7 @@
             </div>
 
             <!-- FLAGS -->
-            <div class="columns component-container">
+            <div class="ventana-debug columns component-container">
                 <div class="flags-container">
                     <div class="flag">
                         <div class="flag">z</div><div id="flagZ" class="flag">/</div>
@@ -101,12 +102,12 @@
             </div>
 
             <!-- VRAM-->
-            <div class="columns component-container">
+            <div class="ventana-debug columns component-container">
                 <canvas id="gameboy-debug-canvas" width="160" height="144"></canvas>
             </div>
 
             <!-- REGISTROS IO-->
-            <div class="columns component-container">
+            <div class="ventana-debug columns component-container">
                 <div class="register-container">
                     <div class="register">
                         <div class="register">lcdc</div><div id="regLCDC" class="register">/</div>
@@ -140,7 +141,7 @@
             </div>
 
             <!-- REGISTROS VENTANA -->
-            <div class="columns component-container">
+            <div class="ventana-debug columns component-container">
                 <div class="register-container">
                     <div class="register">
                         <div class="register">wx</div><div id="windowX" class="register">/</div>
@@ -154,7 +155,7 @@
             </div>
 
             <!-- PILA -->
-            <div id="pila" class="columns component-container">
+            <div id="pila" class="ventana-debug columns component-container">
                 <div class="register-container">
                     <div class="register">
                         <div class="register">$xxxx</div> <div class="register">dddd</div>
@@ -168,11 +169,11 @@
             </div>
         </div>
 
-        <div id="memoria" class="columns component-container">
+        <div id="memoria" class="ventana-debug columns component-container">
         </div>
 
         <!-- INSTRUCCION -->
-        <div class="flex flex-auto">
+        <div class="ventana-debug flex flex-auto">
             <div>
                 <div class="rows debug-container flex-auto">
                     <div id="instruccion" class="flex-auto debug-instruction-container">
@@ -189,6 +190,7 @@
 
 
     </main>
+    
     <div id="gameboy-debug-logs">/</div>
     <script src="gameboy/constantes.js"></script>
     <script src="gameboy/gameboyregistros.js"></script>
