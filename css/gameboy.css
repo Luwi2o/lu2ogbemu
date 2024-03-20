@@ -15,6 +15,11 @@ header{
     display: flex;
 }
 
+#gameboy-canvas{
+    width:"160px";
+    height:"144px"
+}
+
 .title {
     justify-content: space-between;
     justify-content: center;
@@ -63,7 +68,6 @@ h1 {
 }
 
 .row{
-    width: 160px;
     font-size: 0.6rem;
 }
 

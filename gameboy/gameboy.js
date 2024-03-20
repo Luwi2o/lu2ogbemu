@@ -79,7 +79,6 @@ class Gameboy{
             this.pantalla.terminada = false;
             while(!this.pantalla.terminada && !this.cPUDebug.pausado){
                 this.cpu.ciclo();
-                this.cpu.ciclos = Math.ceil(this.cpu.ciclos/4);
                 //contadorCiclos += this.cpu.ciclos;
                 this.pantalla.enCiclos(this.cpu.ciclos);
                 this.interrupciones.enCiclos(this.cpu.ciclos);
@@ -88,7 +87,7 @@ class Gameboy{
             }
             this.regCnl1.actualizar(diferencia);
             this.regCnl2.actualizar(diferencia);
-            this.tiempoAntes = this.tiempoAhora - (diferencia % 1000/60)
+            this.tiempoAntes = this.tiempoAhora;// - (diferencia % 1000/60)
         }
     }
 
