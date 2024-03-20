@@ -481,7 +481,7 @@ class Memoria{
                 case GB_PANTALLA_REG_LYC_COMP : lectura = this.regLCD.lineaYComparar; break;
                 case GB_PANTALLA_REG_WX : lectura = this.regLCD.windowX; break;
                 case GB_PANTALLA_REG_WY : lectura = this.regLCD.windowY; break;
-                case GB_PALETA_REG_BG : lectura = this.regLCD.leerPaleta(); break;
+                case GB_PALETA_REG_BG : lectura = this.regLCD.leerPaletaBGVentana(); break;
                 case GB_PALETA_REG_OBP0 : lectura = this.regLCD.leerPaletaObj0(); break;
                 case GB_PALETA_REG_OBP1 : lectura = this.regLCD.leerPaletaObj1(); break;
 
@@ -837,7 +837,7 @@ class Memoria{
                 case GB_PANTALLA_OAM_DMA_TRANSFER : this.transferenciaDmaOam(dato); break;
                 case GB_PANTALLA_REG_WX : this.regLCD.windowX = dato; break;
                 case GB_PANTALLA_REG_WY : this.regLCD.windowY = dato; break;
-                case GB_PALETA_REG_BG : this.regLCD.escribirPaleta(dato); break;
+                case GB_PALETA_REG_BG : this.regLCD.escribirPaletaBGVentana(dato); break;
                 case GB_PALETA_REG_OBP0 : this.regLCD.escribirPaletaObj0(dato); break;
                 case GB_PALETA_REG_OBP1 : this.regLCD.escribirPaletaObj1(dato); break;
 
@@ -911,7 +911,7 @@ class Memoria{
             case GB_PANTALLA_REG_LYC_COMP : this.regLCD.lineaYComparar = dato; break;
             case GB_PANTALLA_REG_WX : this.regLCD.windowX = dato; break;
             case GB_PANTALLA_REG_WY : this.regLCD.windowY = dato; break;
-            case GB_PALETA_REG_BG : this.regLCD.escribirPaleta(dato); break;
+            case GB_PALETA_REG_BG : this.regLCD.escribirPaletaBGVentana(dato); break;
             case GB_PALETA_REG_OBP0 : this.regLCD.escribirPaletaObj0(dato); break;
             case GB_PALETA_REG_OBP1 : this.regLCD.escribirPaletaObj1(dato); break;
 

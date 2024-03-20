@@ -171,33 +171,34 @@ class Pantalla{
                     }
                 }
 
-                // Se coge exactamente el pixel que necesitamos
-                var xd = 0;
+                // Indice del dato de
+                var indiceByte = 0;
                 if(dentroDeVentana){
-                    xd = ((tileFetch * 0x10) + ((this.lineaVentana * 2) % 16));
+                    indiceByte = ((tileFetch * 0x10) + ((this.lineaVentana * 2) % 16));
                 } else {
-                    xd = ((tileFetch * 16) + (((this.linea + this.regLCD.scrollY) * 2) % 16));
+                    indiceByte = ((tileFetch * 16) + (((this.linea + this.regLCD.scrollY) * 2) % 16));
                 }
 
-                var tileDataLowFetch = this.regLCD.vRAM[(BGWindowAreaInicio + xd) - 0x8000];
-                var tileDataHighFetch = this.regLCD.vRAM[(BGWindowAreaInicio + xd + 1) - 0x8000];
+                var tileDataLowFetch = this.regLCD.vRAM[(BGWindowAreaInicio + indiceByte) - 0x8000];
+                var tileDataHighFetch = this.regLCD.vRAM[(BGWindowAreaInicio + indiceByte + 1) - 0x8000];
 
-                var lol = 0;
+                // Se coge el indice del pixel
+                var indicePixel = 0;
                 if(dentroDeVentana){
-                    lol = (x - this.regLCD.windowX + 7) % 8
+                    indicePixel = (x - this.regLCD.windowX + 7) % 8
                 } else {
-                    lol = (x + this.regLCD.scrollX) % 8
+                    indicePixel = (x + this.regLCD.scrollX) % 8
                 }
 
-                if((tileDataLowFetch & (0x80 >> lol)) != 0) indicePaleta += 0x01;
-                if((tileDataHighFetch & (0x80 >> lol)) != 0) indicePaleta += 0x02;
+                if((tileDataLowFetch & (0x80 >> indicePixel)) != 0) indicePaleta += 0x01;
+                if((tileDataHighFetch & (0x80 >> indicePixel)) != 0) indicePaleta += 0x02;
 
                 // Se elige el color del valor
                 if(dentroDeVentana){
-                    pixel = this.regLCD.valorColorRojo[this.regLCD.paleta[indicePaleta]];
+                    pixel = this.regLCD.valorColor[this.regLCD.paletaBGVent[indicePaleta]];
                 }
                 else{
-                    pixel = this.regLCD.valorColor[this.regLCD.paleta[indicePaleta]];
+                    pixel = this.regLCD.valorColor[this.regLCD.paletaBGVent[indicePaleta]];
                 }
 
             }

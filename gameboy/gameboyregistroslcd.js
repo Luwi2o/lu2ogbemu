@@ -46,7 +46,7 @@ class RegistrosLCD {
         ]
 
 
-        this.paleta = [0, 1, 2, 3];
+        this.paletaBGVent = [0, 1, 2, 3];
         // https://gbdev.io/pandocs/Palettes.html#ff48ff49--obp0-obp1-non-cgb-mode-only-obj-palette-0-1-data
         this.paletaObj0 = [0, 1, 2, 3];
         this.paletaObj1 = [0, 1, 2, 3];
@@ -108,7 +108,7 @@ class RegistrosLCD {
         this.condicionWX = s.condicionWX;
         this.condicionWY = s.condicionWY;
         this.modo = s.modo;
-        this.paleta = s.paleta;
+        this.paletaBGVent = s.paleta;
         this.paletaObj0 = s.paletaObj0;
         this.paletaObj1 = s.paletaObj1;
         this.objetos = new Array();
@@ -235,36 +235,41 @@ class RegistrosLCD {
         );
     }
 
-    escribirPaleta(dato){
+    /** https://gbdev.io/pandocs/Palettes.html#ff47--bgp-non-cgb-mode-only-bg-palette-data
+     * Escribe los valores para la paleta de grises.
+     * @param {*} dato Dato de la paleta.
+     * @returns 
+     */
+    escribirPaletaBGVentana(dato){
         // Bit 0, 1: ID 0
-        this.paleta[0] = dato & 0x03;
+        this.paletaBGVent[0] = dato & 0x03;
         // Bit 2, 3: ID 1
-        this.paleta[1] = (dato >> 2) & 0x03;
+        this.paletaBGVent[1] = (dato >> 2) & 0x03;
         // Bit 4, 5: ID 2
-        this.paleta[2] = (dato >> 4) & 0x03;
+        this.paletaBGVent[2] = (dato >> 4) & 0x03;
         // Bit 6, 7: ID 3
-        this.paleta[3] = (dato >> 6) & 0x03;
+        this.paletaBGVent[3] = (dato >> 6) & 0x03;
         return;
     }
 
-    leerPaleta(){
+    leerPaletaBGVentana(){
         return(
-            this.paleta[0] |
-            (this.paleta[1] << 2) |
-            (this.paleta[2] << 4) |
-            (this.paleta[3] << 6)
+            this.paletaBGVent[0] |
+            (this.paletaBGVent[1] << 2) |
+            (this.paletaBGVent[2] << 4) |
+            (this.paletaBGVent[3] << 6)
         )
     }
 
     iniciarPaleta(dato){
         // Bit 0, 1: ID 0
-        this.paleta[0] = dato & 0x03;
+        this.paletaBGVent[0] = dato & 0x03;
         // Bit 2, 3: ID 1
-        this.paleta[1] = (dato >> 2) & 0x03;
+        this.paletaBGVent[1] = (dato >> 2) & 0x03;
         // Bit 4, 5: ID 2
-        this.paleta[2] = (dato >> 4) & 0x03;
+        this.paletaBGVent[2] = (dato >> 4) & 0x03;
         // Bit 6, 7: ID 3
-        this.paleta[3] = (dato >> 6) & 0x03;
+        this.paletaBGVent[3] = (dato >> 6) & 0x03;
         return;
     }
 
