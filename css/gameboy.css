@@ -1,0 +1,139 @@
+body, html {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+}
+
+header{
+    justify-content: center;
+    text-align: center;
+    display: flex;
+}
+
+.title {
+    justify-content: space-between;
+    justify-content: center;
+    text-align: center;
+    font-weight: 700;
+    margin: 0px;
+    letter-spacing: 1px;
+    display: inline-flex;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    padding-top: 0.25rem;
+    flex-direction: row;
+    padding-bottom: 0.25rem;
+    width: 100%;
+}
+
+h1 {
+    font-size: 20px;
+}
+
+.flex {
+    display: flex;
+    gap: 5px;
+}
+
+.flex-auto {
+    flex: 1 1 auto;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.columns {
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.rows {
+    display: inline-flex;
+    flex-direction: row;
+}
+
+.row{
+    width: 160px;
+    font-size: 0.6rem;
+}
+
+.register{
+    display: inline-flex;
+    width: 50px;
+    font-size: 0.6rem;
+}
+
+.flag{
+    display: inline-flex;
+    width: 40px;
+    font-size: 0.6rem;
+}
+
+.boton{
+    font-size: 0.6rem;
+    padding: 2px;
+    margin:2px; 
+}
+
+
+input{
+    width: 160;
+    overflow: hidden
+}
+
+.register-container{
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.flags-container{
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.component-container{
+    padding: 2px;
+    border-style: dotted;
+    border-width: 2px;
+    border-color: black;
+}
+
+.debug-container{
+    border-width: 2px;
+    border-style: dotted;
+    width:500px;
+    font-size: 0.6rem;
+    padding: 3px
+    
+}
+
+.debug-button{
+    font-size: 0.6rem;
+}
+
+#container-botones{
+    padding-bottom: 2px;
+}
+
+#volumen{
+    margin:0;
+}
+
+span{
+    font-size: 0.6rem;
+    padding-right: 3px;
+}
+
+body {
+    margin: 0;
+}

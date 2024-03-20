@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#000000">
+    <title>Emulador Chip8</title>
+    <link rel="stylesheet" href="css/chip8.css" data-n-p="">
+</head>
+
+<body>
+    <input type="file"></input>
+    <main class="flex flex-auto justify-center items-center">
+        <canvas id="gameboy-canvas" width="640" height="576"></canvas>
+        <canvas id="gameboy-debug-canvas" width="640" height="576"></canvas>
+    </main>
+    <!--Constantes-->
+    <script src="gameboy/constantes.js"></script>
+    <script src="gameboy/gameboyregistros.js"></script>
+    <!--Registros de Interrupciones-->
+    <script src="gameboy/gameboyregistrosinterrupciones.js"></script>
+    <!--Test de Registros de Interrupciones-->
+    <script src="gameboy/test/gameboyregistrosinterrupcion_test.js"></script>
+    <script src="gameboy/gameboyinterrupciones.js"></script>
+    <script src="gameboy/gameboyrenderizador.js"></script>
+    <!--Registros de LCD-->
+    <script src="gameboy/gameboyregistroslcd.js"></script>
+    <!--Test de Registros de LCD-->
+    <script src="gameboy/test/gameboyregistroslcd_test.js"></script>
+    <!--Memoria-->
+    <script src="gameboy/gameboymemoria.js"></script>
+    <!--Test de Memoria-->
+    <script src="gameboy/test/gameboymemoria_test.js"></script>
+    <script src="gameboy/gameboypila.js"></script>
+    <script src="gameboy/gameboypantalla.js"></script>
+    <script src="gameboy/gameboybotones.js"></script>
+    <script src="gameboy/gameboybeep.js"></script>
+    <script src="gameboy/gameboyrenderizador.js"></script>
+    <script src="gameboy/gameboydebug.js"></script>
+    <script src="gameboy/gameboycpu.js"></script>
+    <script src="gameboy/gameboy.js"></script>
+    <!--Test de Gameboy-->
+    <!--<script src="gameboy/test/gameboy_test.js"></script>-->
+</body>
+
+</html>

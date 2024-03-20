@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#000000">
+    <title>Emulador Gameboy</title>
+    <link rel="stylesheet" href="css/gameboy.css" data-n-p="">
+</head>
+
+<body>
+    <main class="columns flex flex-auto justify-center items-center">
+
+        <div class="flex flex-auto justify-center items-center">
+            <!--EMULADOR-->
+            <div class="columns component-container">
+                <canvas class="row" id="gameboy-canvas" width="160" height="144"></canvas>
+                <div class="row" id="container-botones">
+                    <button class="boton" id="boton-a">A</button>
+                    <button class="boton" id="boton-b">B</button>
+                    <button class="boton" id="boton-select">select</button>
+                    <button class="boton" id="boton-start">start</button>
+                    <button class="boton" id="boton-arriba">▲</button>
+                    <button class="boton" id="boton-izquierda">◄</button>
+                    <button class="boton" id="boton-derecha">►</button>
+                    <button class="boton" id="boton-abajo">▼</button>
+                </div>
+                <input id="archivo-rom" class="row" type="file" style="display:none;" accept=".gb">
+                <!--<input id="estado" class="row" type="file">-->
+                <button class="boton" id="boton-cargar-rom" name="button" value="Upload" 
+                    onclick="cargarArchivoROM();">cargar archivo rom .gb</button>
+                <input class="row" type="range" id="volumen">
+                <div>
+                    <input type="file" id="archivo-guardado" style="display:none;" accept=".sav"/>
+                    <button class="boton" id="boton-cargar-guardado" name="button" value="Upload" 
+                    onclick="cargarArchivoGuardado();">cargar .sav</button>
+                    <button class="boton" id="boton-descargar-guardado">guardar .sav</button>
+                </div>
+                <input id="archivo-boot" class="row" type="file" style="display:none;" accept=".bin">
+                <button class="boton" id="boton-cargar-boot" name="button" value="Upload" 
+                    onclick="cargarArchivoBoot();">cargar archivo boot rom .gb</button>
+            </div>
+            
+            <!-- REGISTROS -->
+            <div class="columns component-container">
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">af</div><div id="regAF" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">bc</div><div id="regBC" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">de</div><div id="regDE" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">hl</div><div id="regHL" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">sp</div><div id="regSP" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">pc</div><div id="regPC" class="register">/</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FLAGS -->
+            <div class="columns component-container">
+                <div class="flags-container">
+                    <div class="flag">
+                        <div class="flag">z</div><div id="flagZ" class="flag">/</div>
+                    </div>
+                </div>
+                <div class="flags-container">
+                    <div class="flag">
+                        <div class="flag">n</div><div id="flagN" class="flag">/</div>
+                    </div>
+                </div>
+                <div class="flags-container">
+                    <div class="flag">
+                        <div class="flag">h</div><div id="flagH" class="flag">/</div>
+                    </div>
+                </div>
+                <div class="flags-container">
+                    <div class="flag">
+                        <div class="flag">c</div><div id="flagC" class="flag">/</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VRAM-->
+            <div class="columns component-container">
+                <canvas id="gameboy-debug-canvas" width="160" height="144"></canvas>
+            </div>
+
+            <!-- REGISTROS IO-->
+            <div class="columns component-container">
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">lcdc</div><div id="regLCDC" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">stat</div><div id="regSTAT" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">ly</div><div id="regLYC" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">cnt</div><div id="regCNT" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">ie</div><div id="regIE" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">if</div><div id="regIF" class="register">/</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REGISTROS VENTANA -->
+            <div class="columns component-container">
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">wx</div><div id="windowX" class="register">/</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">wy</div><div id="windowY" class="register">/</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PILA -->
+            <div id="pila" class="columns component-container">
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">$xxxx</div> <div class="register">dddd</div>
+                    </div>
+                </div>
+                <div class="register-container">
+                    <div class="register">
+                        <div class="register">$xxxx</div> <div class="register">dddd</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="memoria" class="columns component-container">
+        </div>
+
+        <!-- INSTRUCCION -->
+        <div class="flex flex-auto">
+            <div>
+                <div class="rows debug-container flex-auto">
+                    <div id="instruccion" class="flex-auto debug-instruction-container">
+                        /
+                    </div>
+                    <div class="debug-buttons-container">
+                        <button class="debug-button" id="boton-continuar-sinpausa">⤳</button>
+                        <button class="debug-button" id="boton-continuar">↦</button>
+                        <button class="debug-button" id="boton-paso">↷</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </main>
+    <div id="gameboy-debug-logs">/</div>
+    <script src="gameboy/constantes.js"></script>
+    <script src="gameboy/gameboyregistros.js"></script>
+    <script src="gameboy/gameboyinterrupciones.js"></script>
+    <script src="gameboy/gameboyregistroslcd.js"></script>
+    <script src="gameboy/gameboyaudio.js"></script>
+    <script src="gameboy/gameboybootrom.js"></script>
+    <script src="gameboy/gameboymemoria.js"></script>
+    <script src="gameboy/gameboypantalla.js"></script>
+    <script src="gameboy/gameboybotones.js"></script>
+    <script src="gameboy/gameboydebug.js"></script>
+    <script src="gameboy/gameboycpu.js"></script>
+    <script src="gameboy/gameboy.js"></script>
+    <script src="gameboy/main.js"></script>
+</body>
+
+</html>
