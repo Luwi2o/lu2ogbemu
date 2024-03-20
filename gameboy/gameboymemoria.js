@@ -440,8 +440,7 @@ class Memoria{
 
             // MBC5
             } else if (this.tipoMBC == MBC5){
-
-                lectura = this.sRAM[0x2000 * this.numeroBancoRAM];
+                lectura = this.sRAM[indice + 0x2000 * this.numeroBancoRAM - 0xA000];
             // ROM
             } else {
                 lectura = this.sRAM[indice - 0xA000];
