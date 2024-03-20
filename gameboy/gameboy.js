@@ -92,6 +92,13 @@ class Gameboy{
         }
     }
 
+    cambiarEscalaPantalla(escala){
+        this.pantalla.cambiarEscala(escala);
+    }
+
+
+    // --- Debug
+
     paso(){
         this.cpu.ciclo()
         this.pantalla.enCiclos(this.cpu.ciclos)

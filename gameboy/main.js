@@ -26,6 +26,7 @@ document.getElementById("archivo-guardado").addEventListener('change', function(
   
 }, false);
 
+
 document.getElementById("archivo-rom").addEventListener('change', function() {
     // Lector de archivo de ROM
     var reader = new FileReader();
@@ -85,6 +86,11 @@ document.getElementById("archivo-rom").addEventListener('change', function() {
                 [].forEach.call(document.querySelectorAll('.ventana-debug'), function (el) {
                     el.style.display = 'none';
                 });
+                document.getElementById("gameboy-canvas").width = 320;
+                document.getElementById("gameboy-canvas").height = 288;
+                document.getElementById("gameboy-canvas").style.width = "320px";
+                document.getElementById("gameboy-canvas").style.height = "288px";
+                gameboy.cambiarEscalaPantalla(2.0);
                 document.getElementById('ocultar-debug').innerText = "abrir debug";
             }
         })

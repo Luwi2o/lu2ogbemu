@@ -3,7 +3,8 @@
 // La pantalla usada por el Chip-8 era monocromatica y tenia una resolucion de 64x32 pixeles.
 // Chip-8 dibuja en la pantalla por medio de sprites. Los sprites se forman de bytes que
 // representan la imagen a dibujar. Un sprite puede estar formado de hasta 15 bytes.
-
+const ALTO_PANTALLA = 144
+const ANCHO_PANTALLA = 160
 class Pantalla{
 
     /** Constructor
@@ -26,6 +27,8 @@ class Pantalla{
         }
         this.regLCD = regLCD;
         this.ints = ints;
+
+        this.escala = 1;
 
         this.terminada = false;
 
@@ -286,8 +289,12 @@ class Pantalla{
         }
     }
 
+    cambiarEscala(escala){
+        this.escala = escala;
+    }
+
     dibujarPantalla(){
-        this.contexto.putImageData(this.lcd, 0, 0);
+        this.contexto.putImageData(this.scaleImageData(this.lcd, this.escala), 0, 0);
     }
 
     scaleImageData(imageData, scale) {
