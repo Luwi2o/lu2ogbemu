@@ -52,8 +52,15 @@ document.getElementById("archivo-rom").addEventListener('change', function() {
         console.log("volumen cambiado a:" + 0.01);
 
         var volumen = document.getElementById('volumen');
+
         volumen.addEventListener("change", function(e) {
-            var nuevoVolumen = e.currentTarget.value / 100.0;
+            var nuevoVolumen = Math.pow( e.currentTarget.value / 100.0, 2);
+            gameboy.sonido.actualizarVolumen(nuevoVolumen);
+            console.log("volumen cambiado a:" + nuevoVolumen);
+        })
+
+        volumen.addEventListener("input", function(e) {
+            var nuevoVolumen = Math.pow( e.currentTarget.value / 100.0, 2);
             gameboy.sonido.actualizarVolumen(nuevoVolumen);
             console.log("volumen cambiado a:" + nuevoVolumen);
         })
