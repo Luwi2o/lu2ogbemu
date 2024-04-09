@@ -38,13 +38,17 @@ class Gameboy{
         this.regBot = new RegistrosBotones(this.tipoConsola, estado);
         this.regCnl1 = new RegistrosCanal1(this.tipoConsola, this.sonido, estado);
         this.regCnl2 = new RegistrosCanal2(this.tipoConsola, this.sonido, estado);
-        this.regAud = new RegistrosAudio(this.tipoConsola, this.sonido, estado);
+        this.regCnl3 = new RegistrosCanal3(this.tipoConsola, this.sonido, estado);
+        this.regCnl4 = new RegistrosCanal4(this.tipoConsola, this.sonido, estado);
+        this.regAud = new RegistrosAudio(this.tipoConsola, this.sonido,
+            this.regCnl1, this.regCnl2, this.regCnl3, this.regCnl4, estado);
 
         this.cPUDebug = new CPUDebug()
 
         // Memoria
         this.memoria = new Memoria(bytesPrograma, this.regLCD, this.regInt, this.regBot, this.regAud, 
-                                    this.regCnl1, this.regCnl2, this.cPUDebug, this.guardado, estado);
+                                    this.regCnl1, this.regCnl2, this.regCnl3, this.regCnl4,
+                                    this.cPUDebug, this.guardado, estado);
         // CPU
         this.interrupciones = new Interrupciones(this.regInt, this.memoria);
         this.cpu = new CPU(this.memoria, this.interrupciones, this.tipoConsola, this.cPUDebug, estado);
@@ -81,11 +85,11 @@ class Gameboy{
                 //contadorCiclos += this.cpu.ciclos;
                 this.pantalla.enCiclos(this.cpu.ciclos);
                 this.interrupciones.enCiclos(this.cpu.ciclos);
-                //this.regCnl1.enCiclos(this.cpu.ciclos);
-                //this.regCnl2.enCiclos(this.cpu.ciclos);
+                this.regCnl1.enCiclos(this.cpu.ciclos);
+                this.regCnl2.enCiclos(this.cpu.ciclos);
+                this.regCnl3.enCiclos(this.cpu.ciclos);
+                this.regCnl4.enCiclos(this.cpu.ciclos);
             }
-            this.regCnl1.actualizar(diferencia);
-            this.regCnl2.actualizar(diferencia);
             this.tiempoAntes = this.tiempoAhora;// - (diferencia % 1000/60)
         }
     }

@@ -200,7 +200,7 @@ class Pantalla{
 
                 // Se elige el color del valor
                 if(dentroDeVentana){
-                    pixel = this.regLCD.valorColorRojo[this.regLCD.paletaBGVent[indicePaleta]];
+                    pixel = this.regLCD.valorColor[this.regLCD.paletaBGVent[indicePaleta]];
                 }
                 else{
                     pixel = this.regLCD.valorColor[this.regLCD.paletaBGVent[indicePaleta]];
@@ -288,12 +288,13 @@ class Pantalla{
             this.lcd.data[ indiceCanvas + 2] = pixel[2];
             this.lcd.data[ indiceCanvas + 3] = pixel[3];
 
+            /*
             if(this.regLCD.lineaY == 79){
                 this.lcd.data[ indiceCanvas ] = 10;
                 this.lcd.data[ indiceCanvas + 1] = 100;
                 this.lcd.data[ indiceCanvas + 2] = 10;
                 this.lcd.data[ indiceCanvas + 3] = 255;
-            }
+            }*/
 
         }
     }
@@ -368,7 +369,7 @@ class Pantalla{
                     // Si está activada la interrupcion STAT en modo 0
                     if(this.regLCD.interrupcionEstadoEnModo0){
                         // Se pide una interrupcion de lcdstat
-                        console.log("interrupcion modo0 ")
+                        //console.log("interrupcion modo0 ")
                         this.ints.regs.flagsInterrupcion[LCDSTAT_INT] = true;
                     }
                 }
@@ -393,7 +394,7 @@ class Pantalla{
                         this.regLCD.LYCLYFlag = true;
                         // Si esta activada la interrupcion en LYC=LY
                         if(this.regLCD.interrupcionEstadoEnLYCLY){
-                            console.log("interrupcion LYCLY " + this.regLCD.lineaY)
+                            //console.log("interrupcion LYCLY " + this.regLCD.lineaY)
                             // Se pide una interrupcion de lcdstat
                             this.ints.regs.flagsInterrupcion[LCDSTAT_INT] = true;
                         }

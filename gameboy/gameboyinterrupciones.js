@@ -179,10 +179,10 @@ class Interrupciones{
      */
     enCiclos(ciclos){
 
-        // Se incrementa el divisor con una frecuencia de 16382Hz, que es cada
-        // 64 ciclos de la cpu
-        var ciclosDivisorPasados = Math.floor((this.ciclosDivisor + ciclos) / 64)
-        this.ciclosDivisor = (this.ciclosDivisor + ciclos) % 64;
+        // Se incrementa el divisor con una frecuencia de 16384Hz, que es cada
+        // 256 ciclos de la cpu
+        var ciclosDivisorPasados = Math.floor((this.ciclosDivisor + ciclos) / 256)
+        this.ciclosDivisor = (this.ciclosDivisor + ciclos) % 256;
         this.regs.divisor = (this.regs.divisor + ciclosDivisorPasados) % 0xff
         
 

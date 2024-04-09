@@ -36,28 +36,35 @@ class Memoria{
 
 
     /** Constructor
-     * @param {Array} rOM
-     * @param {RegistrosLCD} regLCD
-     * @param {RegistrosInterrupciones} regInt
-     * @param {RegistroBotones} regBot
-     * @param {RegistrosAudio} regAud
-     * @param {RegistrosCanal1} regCnl1
-     * @param {RegistrosCanal2} regCnl2
+     * @param {Array} rOM 
+     * @param {RegistrosLCD} regLCD Registros IO de pantalla
+     * @param {RegistrosInterrupciones} regInt Registros de interrupciones
+     * @param {RegistroBotones} regBot  Registros IO de botones
+     * @param {RegistrosAudio} regAud  Registros IO de audio maestro
+     * @param {RegistrosCanal1} regCnl1 Registros IO de audio canal 1
+     * @param {RegistrosCanal2} regCnl2 Registros IO de audio canal 2
+     * @param {RegistrosCanal3} regCnl3 Registros IO de audio canal 3
+     * @param {RegistrosCanal4} regCnl4 Registros IO de audio canal 4
      * @param {CPUDebug} cPUDebug
+     * @param {Array} guardado Archivo de guardado, se copia a SRAM
      */
-    constructor(rOM, regLCD, regInt, regBot, regAud, regCnl1, regCnl2, cPUDebug, guardado, estado){
+    constructor(rOM, regLCD, regInt, regBot, regAud, 
+        regCnl1, regCnl2, regCnl3, regCnl4, 
+        cPUDebug, guardado, estado){
 
         // Flag para mostrar los logs
         this.mostrarLogs = false;
         this.cPUDebug = cPUDebug;
 
-        // Registros especiales
+        // Registros IO
         this.regLCD = regLCD; // Registros de Pantalla
         this.regInt = regInt; // Registros de Interrupciones
         this.regBot = regBot; // Registros de Entrada por Botones
         this.regAud = regAud; // Registros de Audio
         this.regCnl1 = regCnl1; // Registros de Canal 1 de Audio
-        this.regCnl2 = regCnl2; // Registros de Canal 1 de Audio
+        this.regCnl2 = regCnl2; // Registros de Canal 2 de Audio
+        this.regCnl3 = regCnl3; // Registros de Canal 3 de Audio
+        this.regCnl4 = regCnl4; // Registros de Canal 4 de Audio
 
         // Reloj para MBC3
         this.regRTCSegundos = 0x3B;
@@ -73,7 +80,6 @@ class Memoria{
         this.rOM = rOM;
         
         if(estado){
-
             this.wRAM0 = estado.memoria.wRAM0;
             this.wRAM1 = estado.memoria.wRAM1;
             this.iOReg = estado.memoria.iOReg;
@@ -487,45 +493,63 @@ class Memoria{
         // No implementada
         // FF00-FF7F - I/O Registers
         else if(indice >= 0xFF00  && indice <= 0xFF7F){
-            switch(indice){
-                // Botones
-                case GB_BOTONES_REG : lectura = this.regBot.leerRegBotones(); break;
-
-                case GB_PANTALLA_REG_CONTROL : lectura = this.regLCD.leerLCDControl(); break;
-                case GB_PANTALLA_REG_ESTADO: lectura = this.regLCD.leerLCDEstado(); break;
-                case GB_PANTALLA_REG_SCROLLY : lectura = this.regLCD.scrollY; break;
-                case GB_PANTALLA_REG_SCROLLX : lectura = this.regLCD.scrollX; break;
-                case GB_PANTALLA_REG_LY_COORD : lectura = this.regLCD.lineaY; break;
-                case GB_PANTALLA_REG_LYC_COMP : lectura = this.regLCD.lineaYComparar; break;
-                case GB_PANTALLA_REG_WX : lectura = this.regLCD.windowX; break;
-                case GB_PANTALLA_REG_WY : lectura = this.regLCD.windowY; break;
-                case GB_PALETA_REG_BG : lectura = this.regLCD.leerPaletaBGVentana(); break;
-                case GB_PALETA_REG_OBP0 : lectura = this.regLCD.leerPaletaObj0(); break;
-                case GB_PALETA_REG_OBP1 : lectura = this.regLCD.leerPaletaObj1(); break;
-
-                case GB_TEMPORIZADOR_REG_DIV : lectura = this.regInt.divisor; break;
-                case GB_INTERRUPCIONES_REG_IF : lectura = this.regInt.leerIF(); break;
-                case GB_TEMPORIZADOR_REG_TAC : lectura = this.regInt.leerTAC(); break;
-                case GB_TEMPORIZADOR_REG_TIMA : lectura = this.regInt.contador; break;
-                case GB_TEMPORIZADOR_REG_TMA : lectura = this.regInt.contadorModulo ; break;
-
-                case GB_SONIDO_REG_NR52 : lectura = this.regAud.leerAudioControlMaestro(); break;
-                case GB_SONIDO_REG_NR51 : lectura = this.regAud.leerAudioPanoramica(); break;
-                case GB_SONIDO_REG_NR50 : lectura = this.regAud.leerVolumenMaestro(); break;
-
-                case GB_SONIDO_REG_NR10 : lectura = this.regCnl1.leerBarrido(); break;
-                case GB_SONIDO_REG_NR11 : lectura = this.regCnl1.leerCicloYTemporizador(); break;
-                case GB_SONIDO_REG_NR12 : lectura = this.regCnl1.leerVolumenYBarrido(); break;
-                // GB_SONIDO_REG_NR13 Solo escritura
-                case GB_SONIDO_REG_NR14 : lectura = this.regCnl1.leerPeriodoAltoYControl(); break;
-
-                case GB_SONIDO_REG_NR21 : lectura = this.regCnl2.leerCicloYTemporizador(); break;
-                case GB_SONIDO_REG_NR22 : lectura = this.regCnl2.leerVolumenYBarrido(); break;
-                // GB_SONIDO_REG_NR23 Solo escritura
-                case GB_SONIDO_REG_NR24 : lectura = this.regCnl2.leerPeriodoAltoYControl(); break;
-                
-                default: lectura = this.iOReg[indice - 0xFF00]; break;
+            // FF30-FF3F RAM de ondas
+            if(indice >= 0xFF30  && indice <= 0xFF3F){
+                lectura = this.regCnl3.ondaRAM[indice - 0xFF30];
             }
+            else{
+                switch(indice){
+                    // Botones
+                    case GB_BOTONES_REG : lectura = this.regBot.leerRegBotones(); break;
+    
+                    case GB_PANTALLA_REG_CONTROL : lectura = this.regLCD.leerLCDControl(); break;
+                    case GB_PANTALLA_REG_ESTADO: lectura = this.regLCD.leerLCDEstado(); break;
+                    case GB_PANTALLA_REG_SCROLLY : lectura = this.regLCD.scrollY; break;
+                    case GB_PANTALLA_REG_SCROLLX : lectura = this.regLCD.scrollX; break;
+                    case GB_PANTALLA_REG_LY_COORD : lectura = this.regLCD.lineaY; break;
+                    case GB_PANTALLA_REG_LYC_COMP : lectura = this.regLCD.lineaYComparar; break;
+                    case GB_PANTALLA_REG_WX : lectura = this.regLCD.windowX; break;
+                    case GB_PANTALLA_REG_WY : lectura = this.regLCD.windowY; break;
+                    case GB_PALETA_REG_BG : lectura = this.regLCD.leerPaletaBGVentana(); break;
+                    case GB_PALETA_REG_OBP0 : lectura = this.regLCD.leerPaletaObj0(); break;
+                    case GB_PALETA_REG_OBP1 : lectura = this.regLCD.leerPaletaObj1(); break;
+    
+                    case GB_TEMPORIZADOR_REG_DIV : lectura = this.regInt.divisor; break;
+                    case GB_INTERRUPCIONES_REG_IF : lectura = this.regInt.leerIF(); break;
+                    case GB_TEMPORIZADOR_REG_TAC : lectura = this.regInt.leerTAC(); break;
+                    case GB_TEMPORIZADOR_REG_TIMA : lectura = this.regInt.contador; break;
+                    case GB_TEMPORIZADOR_REG_TMA : lectura = this.regInt.contadorModulo ; break;
+    
+                    case GB_SONIDO_REG_NR52 : lectura = this.regAud.leerAudioControlMaestro(); break;
+                    case GB_SONIDO_REG_NR51 : lectura = this.regAud.leerAudioPanoramica(); break;
+                    case GB_SONIDO_REG_NR50 : lectura = this.regAud.leerVolumenMaestro(); break;
+    
+                    case GB_SONIDO_REG_NR10 : lectura = this.regCnl1.leerBarrido(); break;
+                    case GB_SONIDO_REG_NR11 : lectura = this.regCnl1.leerCicloYTemporizador(); break;
+                    case GB_SONIDO_REG_NR12 : lectura = this.regCnl1.leerVolumenYEnvoltorio(); break;
+                    // GB_SONIDO_REG_NR13 Solo escritura
+                    case GB_SONIDO_REG_NR14 : lectura = this.regCnl1.leerPeriodoAltoYControl(); break;
+    
+                    case GB_SONIDO_REG_NR21 : lectura = this.regCnl2.leerCicloYTemporizador(); break;
+                    case GB_SONIDO_REG_NR22 : lectura = this.regCnl2.leerVolumenYEnvoltorio(); break;
+                    // GB_SONIDO_REG_NR23 Solo escritura
+                    case GB_SONIDO_REG_NR24 : lectura = this.regCnl2.leerPeriodoAltoYControl(); break;
+    
+                    // Registros de Audio Canal 3
+                    case GB_SONIDO_REG_NR30 : lectura = this.regCnl3.leerActivadoDAC(); break;
+                    case GB_SONIDO_REG_NR31 : lectura = this.regCnl3.leerTemporizador(); break;
+                    case GB_SONIDO_REG_NR32 : lectura = this.regCnl3.leerNivelSalida(); break;
+                    //case GB_SONIDO_REG_NR33 : lectura = this.regCnl3.leerPeriodoBajo(); break;
+                    case GB_SONIDO_REG_NR34 : lectura = this.regCnl3.leerPeriodoAltoYControl(); break;
+
+                    // Registros de Audio Canal 4
+                    case GB_SONIDO_REG_NR42 : lectura = this.regCnl4.leerVolumenYEnvoltorio(); break;
+                    case GB_SONIDO_REG_NR44 : lectura = this.regCnl4.leerControl(); break;
+                    
+                    default: lectura = this.iOReg[indice - 0xFF00]; break;
+                }
+            }
+
         }
         // FF80-FFFE - High RAM (HRAM)
         else if(indice >= 0xFF80  && indice <= 0xFFFE){
@@ -836,50 +860,69 @@ class Memoria{
         // No implementada
         // FF00-FF7F - I/O Registers
         else if(indice >= 0xFF00  && indice <= 0xFF7F){
-            switch(indice){
-                // Registro botones
-                case GB_BOTONES_REG : this.regBot.escribirRegBotones(dato); break;
+            // FF30-FF3F RAM de ondas
+            if(indice >= 0xFF30  && indice <= 0xFF3F){
+                this.regCnl3.ondaRAM[indice - 0xFF30] = dato;
+                this.regCnl3.ondaActualizada = true;
+            } else {
+                switch(indice){
+                    // Registro botones
+                    case GB_BOTONES_REG : this.regBot.escribirRegBotones(dato); break;
+    
+                    // Registros de LCD
+                    case GB_PANTALLA_REG_CONTROL : this.regLCD.escribirLCDControl(dato); break;
+                    case GB_PANTALLA_REG_ESTADO: this.regLCD.escribirLCDEstado(dato); break;
+                    case GB_PANTALLA_REG_SCROLLY : this.regLCD.scrollY = dato; break;
+                    case GB_PANTALLA_REG_SCROLLX : this.regLCD.scrollX = dato; break;
+                    //case GB_PANTALLA_REG_LY_COORD : this.regLCD.lineY = dato; break; // Solo lectura.
+                    case GB_PANTALLA_REG_LYC_COMP : this.regLCD.lineaYComparar = dato; break;
+                    case GB_PANTALLA_OAM_DMA_TRANSFER : this.transferenciaDmaOam(dato); break;
+                    case GB_PANTALLA_REG_WX : this.regLCD.windowX = dato; break;
+                    case GB_PANTALLA_REG_WY : this.regLCD.windowY = dato; break;
+                    case GB_PALETA_REG_BG : this.regLCD.escribirPaletaBGVentana(dato); break;
+                    case GB_PALETA_REG_OBP0 : this.regLCD.escribirPaletaObj0(dato); break;
+                    case GB_PALETA_REG_OBP1 : this.regLCD.escribirPaletaObj1(dato); break;
+    
+                    // Registros de Interrupciones
+                    case GB_TEMPORIZADOR_REG_DIV : this.regInt.divisor = 0x00; break;
+                    case GB_INTERRUPCIONES_REG_IF : this.regInt.escribirIF(dato); break;
+                    case GB_TEMPORIZADOR_REG_TAC : this.regInt.escribirTAC(dato); break;
+                    case GB_TEMPORIZADOR_REG_TIMA : this.regInt.contador = 0; break;
+                    case GB_TEMPORIZADOR_REG_TMA : this.regInt.contadorModulo = dato; break;
+    
+                    // Registros de Audio Maestro
+                    case GB_SONIDO_REG_NR52 : this.regAud.escribirAudioControlMaestro(dato); break;
+                    case GB_SONIDO_REG_NR51 : this.regAud.escribirAudioPanoramica(dato); break;
+                    case GB_SONIDO_REG_NR50 : this.regAud.escribirVolumenMaestro(dato); break;
+    
+                    // Registros de Audio Canal 1
+                    case GB_SONIDO_REG_NR10 : this.regCnl1.escribirBarrido(dato); break;
+                    case GB_SONIDO_REG_NR11 : this.regCnl1.escribirCicloYTemporizador(dato); break;
+                    case GB_SONIDO_REG_NR12 : this.regCnl1.escribirVolumenYEnvoltorio(dato); break;
+                    case GB_SONIDO_REG_NR13 : this.regCnl1.escribirPeriodoBajo(dato); break;
+                    case GB_SONIDO_REG_NR14 : this.regCnl1.escribirPeriodoAltoYControl(dato); break;
+    
+                    // Registros de Audio Canal 2
+                    case GB_SONIDO_REG_NR21 : this.regCnl2.escribirCicloYTemporizador(dato); break;
+                    case GB_SONIDO_REG_NR22 : this.regCnl2.escribirVolumenYEnvoltorio(dato); break;
+                    case GB_SONIDO_REG_NR23 : this.regCnl2.escribirPeriodoBajo(dato); break;
+                    case GB_SONIDO_REG_NR24 : this.regCnl2.escribirPeriodoAltoYControl(dato); break;
+    
+                    // Registros de Audio Canal 3
+                    case GB_SONIDO_REG_NR30 : this.regCnl3.escribirActivadoDAC(dato); break;
+                    case GB_SONIDO_REG_NR31 : this.regCnl3.escribirTemporizador(dato); break;
+                    case GB_SONIDO_REG_NR32 : this.regCnl3.escribirNivelSalida(dato); break;
+                    case GB_SONIDO_REG_NR33 : this.regCnl3.escribirPeriodoBajo(dato); break;
+                    case GB_SONIDO_REG_NR34 : this.regCnl3.escribirPeriodoAltoYControl(dato); break;
 
-                // Registros de LCD
-                case GB_PANTALLA_REG_CONTROL : this.regLCD.escribirLCDControl(dato); break;
-                case GB_PANTALLA_REG_ESTADO: this.regLCD.escribirLCDEstado(dato); break;
-                case GB_PANTALLA_REG_SCROLLY : this.regLCD.scrollY = dato; break;
-                case GB_PANTALLA_REG_SCROLLX : this.regLCD.scrollX = dato; break;
-                //case GB_PANTALLA_REG_LY_COORD : this.regLCD.lineY = dato; break; // Solo lectura.
-                case GB_PANTALLA_REG_LYC_COMP : this.regLCD.lineaYComparar = dato; break;
-                case GB_PANTALLA_OAM_DMA_TRANSFER : this.transferenciaDmaOam(dato); break;
-                case GB_PANTALLA_REG_WX : this.regLCD.windowX = dato; break;
-                case GB_PANTALLA_REG_WY : this.regLCD.windowY = dato; break;
-                case GB_PALETA_REG_BG : this.regLCD.escribirPaletaBGVentana(dato); break;
-                case GB_PALETA_REG_OBP0 : this.regLCD.escribirPaletaObj0(dato); break;
-                case GB_PALETA_REG_OBP1 : this.regLCD.escribirPaletaObj1(dato); break;
-
-                // Registros de Interrupciones
-                case GB_TEMPORIZADOR_REG_DIV : this.regInt.divisor = 0x00; break;
-                case GB_INTERRUPCIONES_REG_IF : this.regInt.escribirIF(dato); break;
-                case GB_TEMPORIZADOR_REG_TAC : this.regInt.escribirTAC(dato); break;
-                case GB_TEMPORIZADOR_REG_TIMA : this.regInt.contador = 0; break;
-                case GB_TEMPORIZADOR_REG_TMA : this.regInt.contadorModulo = dato; break;
-
-                // Registros de Audio Maestro
-                case GB_SONIDO_REG_NR52 : this.regAud.escribirAudioControlMaestro(dato); break;
-                case GB_SONIDO_REG_NR51 : this.regAud.escribirAudioPanoramica(dato); break;
-                case GB_SONIDO_REG_NR50 : this.regAud.escribirVolumenMaestro(dato); break;
-
-                // Registros de Audio Canal 1
-                case GB_SONIDO_REG_NR10 : this.regCnl1.escribirBarrido(dato); break;
-                case GB_SONIDO_REG_NR11 : this.regCnl1.escribirCicloYTemporizador(dato); break;
-                case GB_SONIDO_REG_NR12 : this.regCnl1.escribirVolumenYBarrido(dato); break;
-                case GB_SONIDO_REG_NR13 : this.regCnl1.escribirPeriodoBajo(dato); break;
-                case GB_SONIDO_REG_NR14 : this.regCnl1.escribirPeriodoAltoYControl(dato); break;
-
-                // Registros de Audio Canal 2
-                case GB_SONIDO_REG_NR21 : this.regCnl2.escribirCicloYTemporizador(dato); break;
-                case GB_SONIDO_REG_NR22 : this.regCnl2.escribirVolumenYBarrido(dato); break;
-                case GB_SONIDO_REG_NR23 : this.regCnl2.escribirPeriodoBajo(dato); break;
-                case GB_SONIDO_REG_NR24 : this.regCnl2.escribirPeriodoAltoYControl(dato); break;
-
-                default: this.iOReg[indice - 0xFF00] = dato; break;
+                    // Registros de Audio Canal 4
+                    case GB_SONIDO_REG_NR41 : this.regCnl4.escribirTemporizador(dato); break;
+                    case GB_SONIDO_REG_NR42 : this.regCnl4.escribirVolumenYEnvoltorio(dato); break;
+                    case GB_SONIDO_REG_NR43 : this.regCnl4.escribirFrecuenciaYAletoriedad(dato); break;
+                    case GB_SONIDO_REG_NR44 : this.regCnl4.escribirControl(dato); break;
+    
+                    default: this.iOReg[indice - 0xFF00] = dato; break;
+                }
             }
         }
         // FF80-FFFE - High RAM (HRAM)
@@ -940,12 +983,12 @@ class Memoria{
 
             case GB_SONIDO_REG_NR10 : this.regCnl1.escribirBarrido(dato); break;
             case GB_SONIDO_REG_NR11 : this.regCnl1.escribirCicloYTemporizador(dato); break;
-            case GB_SONIDO_REG_NR12 : this.regCnl1.escribirVolumenYBarrido(dato); break;
+            case GB_SONIDO_REG_NR12 : this.regCnl1.escribirVolumenYEnvoltorio(dato); break;
             case GB_SONIDO_REG_NR13 : this.regCnl1.escribirPeriodoBajo(dato); break;
             case GB_SONIDO_REG_NR14 : this.regCnl1.escribirPeriodoAltoYControl(dato); break;
 
             case GB_SONIDO_REG_NR21 : this.regCnl2.escribirCicloYTemporizador(dato); break;
-            case GB_SONIDO_REG_NR22 : this.regCnl2.escribirVolumenYBarrido(dato); break;
+            case GB_SONIDO_REG_NR22 : this.regCnl2.escribirVolumenYEnvoltorio(dato); break;
             case GB_SONIDO_REG_NR23 : this.regCnl2.escribirPeriodoBajo(dato); break;
             case GB_SONIDO_REG_NR24 : this.regCnl2.escribirPeriodoAltoYControl(dato); break;
         }

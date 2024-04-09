@@ -105,6 +105,11 @@
 
             <!-- VRAM-->
             <div class="ventana-debug columns component-container">
+                <canvas id="oscilloscope" width="160" height="144"></canvas>
+            </div>
+            
+            <!-- VRAM-->
+            <div class="ventana-debug columns component-container">
                 <canvas id="gameboy-debug-canvas" width="160" height="144"></canvas>
             </div>
 
@@ -195,6 +200,7 @@
 
     <div id="gameboy-debug-logs">/</div>
     <script src="gameboy/constantes.js"></script>
+    <script src="gameboy/gameboyfft.js"></script>
     <script src="gameboy/gameboyregistros.js"></script>
     <script src="gameboy/gameboyinterrupciones.js"></script>
     <script src="gameboy/gameboyregistroslcd.js"></script>
