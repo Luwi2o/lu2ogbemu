@@ -860,7 +860,7 @@ class Sonido{
             requestAnimationFrame(draw);
             canvasCtx.fillStyle = "rgb(200 200 200)";
             canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-            canvasCtx.lineWidth = 2;
+            canvasCtx.lineWidth = 1;
             canvasCtx.strokeStyle = "rgb(0 0 0)";
 
             for(var canal = 0; canal < 4; canal++){
@@ -883,8 +883,6 @@ class Sonido{
     
                     x += sliceWidth;
                 }
-    
-                canvasCtx.lineTo(canvas.width / 2, canvas.height / 2);
                 canvasCtx.stroke();
             }
         }
