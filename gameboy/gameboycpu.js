@@ -1,4 +1,4 @@
-// Emulador de GameBoy
+// CPU de GameBoy
 
 class CPUDebug{
     constructor(){

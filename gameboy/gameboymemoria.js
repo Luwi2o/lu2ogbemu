@@ -425,6 +425,7 @@ class Memoria{
         else if(indice >= 0xA000  && indice <= 0xBFFF){
             // MBC1
             if(this.tipoMBC == MBC1){
+                if(this.tamanyoRAM)
                 if(this.activadoRAM) 
                     lectura =  this.sRAM[indice + 0x2000 * this.numeroBancoRAM - 0xA000];
                 else lectura = 0x00;

@@ -180,14 +180,6 @@ class Debug{
                 if(debug.pausado) return;
 
                 mostrarPila()
-                /*
-                document.getElementById("gameboy-debug-logs").innerHTML = 
-                    gameboy.cPUDebug.instruccionPC + ": codigo: " +gameboy.cPUDebug.codigoStr + 
-                    ", instr: " + gameboy.cPUDebug.instruccionStr + "</br>" +
-                    gameboy.cPUDebug.flagsStr + "</br>" +
-                    gameboy.cPUDebug.registrosStr + " " +  gameboy.cPUDebug.registros16Str + "</br>" +
-                    gameboy.memoria.memoriaStr + "</br>"
-                */
                 
                 document.getElementById("instruccion").innerHTML = gameboy.cPUDebug.instruccionPC + 
                     ": codigo: " +gameboy.cPUDebug.codigoStr + ", instr: " + gameboy.cPUDebug.instruccionStr;
