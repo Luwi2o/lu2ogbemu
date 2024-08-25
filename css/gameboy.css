@@ -92,7 +92,15 @@ h1 {
 
 input{
     width: 160;
-    overflow: hidden
+    overflow: hidden;
+}
+
+input, .boton{
+    border-radius: 0px;
+}
+
+*{
+    border-radius: 8px;
 }
 
 .register-container{
@@ -107,14 +115,14 @@ input{
 
 .component-container{
     padding: 2px;
-    border-style: dotted;
+    border: 2px solid;
     border-width: 2px;
     border-color: black;
 }
 
 .debug-container{
+    border: 2px solid;
     border-width: 2px;
-    border-style: dotted;
     width:500px;
     font-size: 0.6rem;
     padding: 3px

@@ -1,20 +1,19 @@
 function cargarArchivoGuardado() {
-    document.getElementById("archivo-guardado").click();
+    $("#archivo-guardado").click();
 };
 
 function cargarArchivoROM() {
-    document.getElementById("archivo-rom").click();
+    $("#archivo-rom").click();
 };
 
 function cargarArchivoBoot() {
-    document.getElementById("archivo-boot").click();
+    $("#archivo-boot").click();
 };
 
 var estado;
 var guardado;
 
-document.getElementById("archivo-guardado").addEventListener('change', function() {
-    // Lector de archivo de guardado
+$("#archivo-guardado").on('change', function() {
     var reader = new FileReader();
     
     reader.onload = function() {
@@ -23,93 +22,64 @@ document.getElementById("archivo-guardado").addEventListener('change', function(
         console.log(guardado);
     }
     reader.readAsArrayBuffer(this.files[0]);
-  
-}, false);
+});
 
-
-document.getElementById("archivo-rom").addEventListener('change', function() {
-    // Lector de archivo de ROM
+$("#archivo-rom").on('change', function() {
     var reader = new FileReader();
     
     reader.onload = function() {
-
         var arrayBuffer = this.result;
-        // Se inicia el buffer con el ROM
         rom = new Uint8Array(arrayBuffer);
         var gameboy = new Gameboy(rom, guardado);
 
-        //gameboy.pausarEn(0x100);
-
         var debug = new Debug(gameboy);
-        // Se inicia la ejecucion del emulador
         gameboy.iniciar();
         debug.empezar();
 
-        // Se mapean los eventos con los botones
-        mapear(gameboy)
+        mapear(gameboy);
         
         gameboy.sonido.actualizarVolumen(0.01);
         console.log("volumen cambiado a:" + 0.01);
 
-        var volumen = document.getElementById('volumen');
-
-        volumen.addEventListener("change", function(e) {
-            var nuevoVolumen = Math.pow( e.currentTarget.value / 100.0, 2);
+        $("#volumen").on("change input", function(e) {
+            var nuevoVolumen = Math.pow(e.currentTarget.value / 100.0, 2);
             gameboy.sonido.actualizarVolumen(nuevoVolumen);
             console.log("volumen cambiado a:" + nuevoVolumen);
-        })
+        });
 
-        volumen.addEventListener("input", function(e) {
-            var nuevoVolumen = Math.pow( e.currentTarget.value / 100.0, 2);
-            gameboy.sonido.actualizarVolumen(nuevoVolumen);
-            console.log("volumen cambiado a:" + nuevoVolumen);
-        })
-
-        var botonDescargarGuardado = document.getElementById('boton-descargar-guardado');
-        botonDescargarGuardado.addEventListener("click", function(e) {
-            console.log("GUARDANDO")
-            var filename = "save.sav"
-            const a = document.createElement('a')
+        $("#boton-descargar-guardado").on("click", function(e) {
+            console.log("GUARDANDO");
+            var filename = "save.sav";
+            const a = document.createElement('a');
             const blob = new Blob([gameboy.memoria.sRAM]);
-            const url = URL.createObjectURL(blob)
-            a.setAttribute('href', url)
-            a.setAttribute('download', filename)
-            a.click()
-        })
+            const url = URL.createObjectURL(blob);
+            a.setAttribute('href', url);
+            a.setAttribute('download', filename);
+            a.click();
+        });
 
-        document.getElementById('ocultar-debug').addEventListener("click", function(e) {
-            if(debug.pausado){
-                // Continuar debug
-                console.log("ABRIENDO DEBUG")
+        $("#ocultar-debug").on("click", function(e) {
+            if (debug.pausado) {
+                console.log("ABRIENDO DEBUG");
                 debug.continuar();
-                [].forEach.call(document.querySelectorAll('.ventana-debug'), function (el) {
-                    el.style.display = 'inline-flex';
-                });
-                document.getElementById('ocultar-debug').innerText = "cerrar debug";
+                $(".ventana-debug").css('display', 'inline-flex');
+                $("#ocultar-debug").text("cerrar debug");
             } else {
-                // Ocultar debug
-                console.log("CERRANDO DEBUG")
+                console.log("CERRANDO DEBUG");
                 debug.pausar();
-                [].forEach.call(document.querySelectorAll('.ventana-debug'), function (el) {
-                    el.style.display = 'none';
-                });
-                document.getElementById("gameboy-canvas").width = 320;
-                document.getElementById("gameboy-canvas").height = 288;
-                document.getElementById("gameboy-canvas").style.width = "320px";
-                document.getElementById("gameboy-canvas").style.height = "288px";
+                $(".ventana-debug").css('display', 'none');
+                $("#gameboy-canvas").width(320);
+                $("#gameboy-canvas").height(288);
+                $("#gameboy-canvas").css({"width": "320px", "height": "288px"});
                 gameboy.cambiarEscalaPantalla(2.0);
-                document.getElementById('ocultar-debug').innerText = "abrir debug";
+                $("#ocultar-debug").text("abrir debug");
             }
-        })
-
-
+        });
     }
     reader.readAsArrayBuffer(this.files[0]);
-  
-}, false);
+});
 
-document.getElementById("archivo-boot").addEventListener('change', function() {
-    // Lector de archivo de boot
+$("#archivo-boot").on('change', function() {
     var reader = new FileReader();
     
     reader.onload = function() {
@@ -118,57 +88,54 @@ document.getElementById("archivo-boot").addEventListener('change', function() {
         console.log(boot.toString());
     }
     reader.readAsArrayBuffer(this.files[0]);
-  
-}, false);
+});
 
+function mapear(gameboy) {
+    $("#boton-a").on("mousedown mouseup", function(event) {
+        if (event.type === "mousedown") gameboy.pulsar(BOTON_A);
+        else gameboy.soltar(BOTON_A);
+    });
+    $("#boton-b").on("mousedown mouseup", function(event) {
+        if (event.type === "mousedown") gameboy.pulsar(BOTON_B);
+        else gameboy.soltar(BOTON_B);
+    });
+    $("#boton-select").on("mousedown mouseup", function(event) {
+        if (event.type === "mousedown") gameboy.pulsar(BOTON_SELECT);
+        else gameboy.soltar(BOTON_SELECT);
+    });
+    $("#boton-start").on("mousedown mouseup", function(event) {
+        if (event.type === "mousedown") gameboy.pulsar(BOTON_START);
+        else gameboy.soltar(BOTON_START);
+    });
+    $("#boton-arriba").on("mousedown mouseup", function(event) {
+        if (event.type === "mousedown") gameboy.pulsar(BOTON_ARRIBA);
+        else gameboy.soltar(BOTON_ARRIBA);
+    });
+    $("#boton-izquierda").on("mousedown mouseup", function(event) {
+        if (event.type === "mousedown") gameboy.pulsar(BOTON_IZQUIERDA);
+        else gameboy.soltar(BOTON_IZQUIERDA);
+    });
+    $("#boton-derecha").on("mousedown mouseup", function(event) {
+        if (event.type === "mousedown") gameboy.pulsar(BOTON_DERECHA);
+        else gameboy.soltar(BOTON_DERECHA);
+    });
+    $("#boton-abajo").on("mousedown mouseup", function(event) {
+        if (event.type === "mousedown") gameboy.pulsar(BOTON_ABAJO);
+        else gameboy.soltar(BOTON_ABAJO);
+    });
 
-function mapear(gameboy){
-    document.getElementById("boton-a").addEventListener("mousedown", ()=>{gameboy.pulsar(BOTON_A)});
-    document.getElementById("boton-a").addEventListener("mouseup", ()=>{gameboy.soltar(BOTON_A)});
-    document.getElementById("boton-b").addEventListener("mousedown", ()=>{gameboy.pulsar(BOTON_B)});
-    document.getElementById("boton-b").addEventListener("mouseup", ()=>{gameboy.soltar(BOTON_B)});
-    document.getElementById("boton-select").addEventListener("mousedown", ()=>{gameboy.pulsar(BOTON_SELECT)});
-    document.getElementById("boton-select").addEventListener("mouseup", ()=>{gameboy.soltar(BOTON_SELECT)});
-    document.getElementById("boton-start").addEventListener("mousedown", ()=>{gameboy.pulsar(BOTON_START)});
-    document.getElementById("boton-start").addEventListener("mouseup", ()=>{gameboy.soltar(BOTON_START)});
-    document.getElementById("boton-arriba").addEventListener("mousedown", ()=>{gameboy.pulsar(BOTON_ARRIBA)});
-    document.getElementById("boton-arriba").addEventListener("mouseup", ()=>{gameboy.soltar(BOTON_ARRIBA)});
-    document.getElementById("boton-izquierda").addEventListener("mousedown", ()=>{gameboy.pulsar(BOTON_IZQUIERDA)});
-    document.getElementById("boton-izquierda").addEventListener("mouseup", ()=>{gameboy.soltar(BOTON_IZQUIERDA)});
-    document.getElementById("boton-derecha").addEventListener("mousedown", ()=>{gameboy.pulsar(BOTON_DERECHA)});
-    document.getElementById("boton-derecha").addEventListener("mouseup", ()=>{gameboy.soltar(BOTON_DERECHA)});
-    document.getElementById("boton-abajo").addEventListener("mousedown", ()=>{gameboy.pulsar(BOTON_ABAJO)});
-    document.getElementById("boton-abajo").addEventListener("mouseup", ()=>{gameboy.soltar(BOTON_ABAJO)});
-
-    addEventListener("keydown", (event) => {
-        switch(event.code){
-            case "KeyA": gameboy.pulsar(BOTON_IZQUIERDA); break;
-            case "KeyS": gameboy.pulsar(BOTON_ABAJO); break;
-            case "KeyW": gameboy.pulsar(BOTON_ARRIBA); break;
-            case "KeyD": gameboy.pulsar(BOTON_DERECHA); break;
-
-            case "KeyK": gameboy.pulsar(BOTON_B); break;
-            case "KeyL": gameboy.pulsar(BOTON_A); break;
-            case "KeyH": gameboy.pulsar(BOTON_SELECT); break;
-            case "KeyJ": gameboy.pulsar(BOTON_START); break;
+    $(document).on("keydown keyup", function(event) {
+        var accion = event.type === "keydown" ? gameboy.pulsar : gameboy.soltar;
+        switch(event.code) {
+            case "KeyA": accion(BOTON_IZQUIERDA); break;
+            case "KeyS": accion(BOTON_ABAJO); break;
+            case "KeyW": accion(BOTON_ARRIBA); break;
+            case "KeyD": accion(BOTON_DERECHA); break;
+            case "KeyK": accion(BOTON_B); break;
+            case "KeyL": accion(BOTON_A); break;
+            case "KeyH": accion(BOTON_SELECT); break;
+            case "KeyJ": accion(BOTON_START); break;
             default: console.log("Tecla no mapeada: " + event.code);
         }
     });
-
-    addEventListener("keyup", (event) => {
-        switch(event.code){
-            case "KeyA": gameboy.soltar(BOTON_IZQUIERDA); break;
-            case "KeyS": gameboy.soltar(BOTON_ABAJO); break;
-            case "KeyW": gameboy.soltar(BOTON_ARRIBA); break;
-            case "KeyD": gameboy.soltar(BOTON_DERECHA); break;
-
-            case "KeyK": gameboy.soltar(BOTON_B); break;
-            case "KeyL": gameboy.soltar(BOTON_A); break;
-            case "KeyH": gameboy.soltar(BOTON_SELECT); break;
-            case "KeyJ": gameboy.soltar(BOTON_START); break;
-            default: console.log("Tecla no mapeada: " + event.code);
-        }
-    });
-
 }
-
