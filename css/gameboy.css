@@ -1,0 +1,230 @@
+:root{
+    --bg: #0f1420;
+    --panel: #101826;
+    --panel-soft: #0b1220;
+    --border: #223049;
+    --text: #e6edf3;
+    --muted: #9fb1c7;
+    --accent: #7dd3fc;
+    --accent-pressed: #38bdf8;
+    --shadow: 0 10px 30px rgba(2,8,23,.35);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    --fs-sm: 0.9rem;
+    --fs: 1rem;
+    --fs-lg: 1.05rem;
+}
+
+@media (prefers-color-scheme: light){
+    :root{
+        --bg: #f4f7fb;
+        --panel: #ffffff;
+        --panel-soft: #f7fafc;
+        --border: #d7e0ea;
+        --text: #0f172a;
+        --muted: #4b5563;
+        --accent: #0284c7;
+        --accent-pressed: #0369a1;
+        --shadow: 0 8px 24px rgba(2,8,23,.12);
+    }
+}
+
+*{ box-sizing: border-box; }
+html, body{ height:100%; }
+body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+main{
+    padding: 24px;
+    display: flex;
+    justify-content: center;
+}
+
+main > .flex{
+    width: min(1200px, 96vw);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.component-container,
+.ventana-debug{
+    background: linear-gradient(180deg, var(--panel), var(--panel-soft));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    box-shadow: var(--shadow);
+}
+
+.component-container,
+.ventana-debug,
+.debug-container{
+    border-style: solid;
+}
+
+#gameboy-canvas,
+#gameboy-debug-canvas,
+#oscilloscope{
+    display: block;
+    width: clamp(320px, 60vw, 480px);
+    height: auto;
+    margin: 0 auto 10px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #0b0f14;
+}
+
+#gameboy-debug-canvas,
+#oscilloscope{
+    width: 260px;
+}
+
+.boton, .debug-button{
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: var(--fs);
+    padding: .6rem .9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: #1a2333;
+    color: var(--text);
+    cursor: pointer;
+    box-shadow: 0 2px 0 rgba(0,0,0,.35);
+    transition: transform .06s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+.boton:hover, .debug-button:hover{
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(125,211,252,.15), 0 6px 22px rgba(2,8,23,.35);
+}
+.boton:active, .debug-button:active{
+    transform: translateY(1px);
+    background: #0f172a;
+}
+.boton:focus-visible, .debug-button:focus-visible{
+    outline: 3px solid rgba(125,211,252,.35);
+    outline-offset: 1px;
+}
+
+#container-botones{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding-bottom: 6px;
+}
+
+input[type="file"]{ display:none; }
+
+input[type="range"]{
+    width: clamp(320px, 60vw, 480px);
+    height: 2px;
+    background: var(--border);
+    border-radius: 999px;
+    margin: 6px 0 10px;
+    -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid #0b1220;
+}
+
+input[type="range"]::-moz-range-thumb{
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid #0b1220;
+}
+input[type="range"]::-moz-range-track{ height:2px; background: var(--border); }
+
+.flex{ display:flex; gap: 10px; }
+.flex-auto{ flex: 1 1 auto; }
+.justify-center{ justify-content: center; }
+.items-center{ align-items: center; }
+.columns{ display:flex; flex-direction: column; gap: 10px; }
+.rows{ display:flex; flex-direction: row; gap: 10px; }
+
+.register-container, .flags-container{
+    display: grid;
+    gap: 8px;
+}
+
+.register, .flag{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 140px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #0d1627;
+    font-family: var(--mono);
+    font-size: var(--fs-sm);
+    letter-spacing: .2px;
+}
+
+.debug-container{
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: clamp(320px, 70vw, 520px);
+    font-family: var(--mono);
+    font-size: var(--fs);
+    padding: 10px;
+}
+#instruccion{
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px dashed var(--border);
+    background: #0d1627;
+    min-height: 48px;
+    white-space: pre-wrap;
+}
+
+#gameboy-debug-logs{
+    width: min(1200px, 96vw);
+    margin: 12px auto 28px;
+    padding: 12px;
+    background: linear-gradient(180deg, var(--panel), var(--panel-soft));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    max-height: 40vh;
+    overflow: auto;
+}
+
+.panel-title{
+    font-weight: 700;
+    font-size: var(--fs-lg);
+    letter-spacing: .2px;
+    margin: 2px 2px 8px;
+    color: var(--text);
+}
+
+span{ font-size: var(--fs-sm); }
+h1{ font-size: 20px; margin: 0; }
+header{ display:flex; justify-content:center; text-align:center; }
+
+.columns.component-container:first-of-type{
+    flex: 1 1 520px;
+    align-self: flex-start;
+}
+.ventana-debug{
+    flex: 1 1 260px;
+}

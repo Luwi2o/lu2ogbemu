@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Emulador Game Boy</title>
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+    <!-- ====== BARRA SUPERIOR ====== -->
+    <header class="toolbar" role="banner">
+    <div class="brand" aria-label="Emulador Game Boy">
+        <span class="dot" aria-hidden="true"></span>
+        <span>Game Boy</span>
+    </div>
+
+    <div class="group" aria-label="Carga de archivos">
+        <input id="archivo-rom" type="file" accept=".gb" hidden>
+        <button class="btn primary" id="boton-cargar-rom">Cargar ROM (.gb)</button>
+
+        <input id="archivo-guardado" type="file" accept=".sav" hidden>
+        <button class="btn" id="boton-cargar-guardado">Cargar .sav</button>
+        <button class="btn" id="boton-descargar-guardado">Guardar .sav</button>
+
+        <input id="archivo-boot" type="file" accept=".bin" hidden>
+        <button class="btn ghost" id="boton-cargar-boot">Boot ROM (.bin)</button>
+    </div>
+
+    <div class="group vol" aria-label="Volumen">
+        <label for="volumen" class="mono" style="opacity:.7">Vol</label>
+        <input type="range" id="volumen" min="0" max="100" value="50">
+    </div>
+
+    <div class="group right" aria-label="Rendimiento y depuración" style="gap:.75rem">
+        <label class="mono" style="display:flex; align-items:center; gap:.5rem; opacity:.85">
+        <input id="unlock-fps" type="checkbox">
+        FPS ilimitados
+        </label>
+    <div class="mono" id="fps" style="min-width:110px; text-align:right; opacity:.85">FPS: --</div>
+
+    <button class="btn" id="ocultar-debug"
+        onclick="document.querySelector('.debug').classList.toggle('hidden')">
+        Mostrar/Ocultar debug
+    </button>
+    </div>
+
+    </header>
+
+    <!-- ====== ZONA CENTRAL ====== -->
+    <main class="layout" role="main">
+    <!-- Pantalla -->
+    <section class="screen" aria-label="Pantalla de juego">
+        <div class="screen-inner">
+        <div class="lcd">
+            <canvas id="gameboy-canvas" width="160" height="144"></canvas>
+        </div>
+        </div>
+    </section>
+
+    <!-- Controles -->
+    <section class="controls" aria-label="Controles">
+        <div class="pad">
+        <div class="mono" style="opacity:.7">Cruceta</div>
+        <div class="dpad">
+            <span class="spacer"></span>
+            <button class="btn round" id="boton-arriba">▲</button>
+            <span class="spacer"></span>
+            <button class="btn round" id="boton-izquierda">◄</button>
+            <span class="spacer"></span>
+            <button class="btn round" id="boton-derecha">►</button>
+            <span class="spacer"></span>
+            <button class="btn round" id="boton-abajo">▼</button>
+            <span class="spacer"></span>
+        </div>
+        </div>
+
+        <div class="ab">
+        <div class="mono" style="opacity:.7">Acción</div>
+        <div class="abgrid">
+            <button class="btn round" id="boton-a">A</button>
+            <button class="btn round" id="boton-b">B</button>
+        </div>
+        </div>
+
+        <div class="meta">
+        <button class="btn pill" id="boton-select">Select</button>
+        <button class="btn pill" id="boton-start">Start</button>
+        </div>
+    </section>
+
+    <!-- Debug -->
+    <aside class="debug" aria-label="Depuración">
+        <nav class="tabs" aria-label="Pestañas de debug">
+        <button class="btn tab pill" data-tab="t-reg">Registros</button>
+        <button class="btn tab pill" data-tab="t-flags">Flags</button>
+        <button class="btn tab pill" data-tab="t-video">Video</button>
+        <button class="btn tab pill" data-tab="t-io">IO</button>
+        <button class="btn tab pill" data-tab="t-otros">Pila/Mem/Logs</button>
+        </nav>
+        <section class="debug-panels">
+        <!-- === Registros === -->
+        <div class="panel" id="t-reg">
+            <div class="cards">
+            <div class="card"><div class="k">AF</div><div class="v" id="regAF">/</div></div>
+            <div class="card"><div class="k">BC</div><div class="v" id="regBC">/</div></div>
+            <div class="card"><div class="k">DE</div><div class="v" id="regDE">/</div></div>
+            <div class="card"><div class="k">HL</div><div class="v" id="regHL">/</div></div>
+            <div class="card"><div class="k">SP</div><div class="v" id="regSP">/</div></div>
+            <div class="card"><div class="k">PC</div><div class="v" id="regPC">/</div></div>
+            </div>
+        </div>
+
+        <!-- === Flags === -->
+        <div class="panel hidden" id="t-flags">
+            <div class="cards">
+            <div class="card"><div class="k">Z</div><div class="v" id="flagZ">/</div></div>
+            <div class="card"><div class="k">N</div><div class="v" id="flagN">/</div></div>
+            <div class="card"><div class="k">H</div><div class="v" id="flagH">/</div></div>
+            <div class="card"><div class="k">C</div><div class="v" id="flagC">/</div></div>
+            </div>
+        </div>
+
+        <!-- === Video === -->
+        <div class="panel hidden" id="t-video">
+            <div class="cards" style="grid-template-columns: 1fr 1fr;">
+            <div class="card">
+                <div class="k">Osciloscopio</div>
+                <canvas id="oscilloscope" width="160" height="144" style="width:100%;aspect-ratio:160/144;background:#000;border-radius:8px"></canvas>
+            </div>
+            <div class="card">
+                <div class="k">Debug LCD</div>
+                <canvas id="gameboy-debug-canvas" width="160" height="144" style="width:100%;aspect-ratio:160/144;background:#000;border-radius:8px"></canvas>
+            </div>
+            </div>
+        </div>
+
+        <!-- === IO === -->
+        <div class="panel hidden" id="t-io">
+            <div class="cards">
+            <div class="card"><div class="k">LCDC</div><div class="v" id="regLCDC">/</div></div>
+            <div class="card"><div class="k">STAT</div><div class="v" id="regSTAT">/</div></div>
+            <div class="card"><div class="k">LY</div><div class="v" id="regLYC">/</div></div>
+            <div class="card"><div class="k">CNT</div><div class="v" id="regCNT">/</div></div>
+            <div class="card"><div class="k">IE</div><div class="v" id="regIE">/</div></div>
+            <div class="card"><div class="k">IF</div><div class="v" id="regIF">/</div></div>
+            <div class="card"><div class="k">WX</div><div class="v" id="windowX">/</div></div>
+            <div class="card"><div class="k">WY</div><div class="v" id="windowY">/</div></div>
+            <div class="card"><div class="k">BGP</div><div class="v" id="regBGP">/</div></div>
+            <div class="card"><div class="k">OBP0</div><div class="v" id="regOBP0">/</div></div>
+            <div class="card"><div class="k">OBP1</div><div class="v" id="regOBP1">/</div></div>
+            <div class="card"><div class="k">OBP0W</div><div class="v" id="regOBP0W">/</div></div>
+            <div class="card"><div class="k">OBP1W</div><div class="v" id="regOBP1W">/</div></div>
+            <div class="card"><div class="k">OBP0M</div><div class="v" id="regOBP0M">/</div></div>
+            <div class="card"><div class="k">OBP1M</div><div class="v" id="regOBP1M">/</div></div>
+            <div class="card"><div class="k">OBJ0</div><div class="v" id="regOBJ0">/</div></div>
+            <div class="card"><div class="k">OBJ0IDX</div><div class="v" id="regOBJ0IDX">/</div></div>
+            </div>
+        </div>
+
+        <!-- === Otros (pila/mem/logs + stepping) === -->
+        <div class="panel hidden" id="t-otros">
+            <div class="box mono" style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin-bottom:.75rem">
+            <span style="opacity:.7">CPU</span>
+            <button class="btn" id="boton-continuar-sinpausa">⤳</button>
+            <button class="btn" id="boton-continuar">↦</button>
+            <button class="btn" id="boton-paso">↷</button>
+            <div class="sep"></div>
+            <div id="instruccion" class="mono grow">/</div>
+            </div>
+
+            <div class="cards" style="grid-template-columns:1fr 1fr; align-items:start">
+            <div class="box stack mono" id="pila">
+                <div>$xxxx <strong>dddd</strong></div>
+                <div>$xxxx <strong>dddd</strong></div>
+            </div>
+            <div class="box mem mono" id="memoria"></div>
+            </div>
+
+            <div class="box logs mono" id="gameboy-debug-logs" style="margin-top:.75rem">/</div>
+        </div>
+        </section>
+    </aside>
+    </main>
+</div>
+
+<!-- ====== Tabs pequeñas sin dependencias ====== -->
+<script>
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('.panel');
+    function showTab(id){
+        panels.forEach(p=>p.classList.add('hidden'));
+        const el = document.getElementById(id);
+        if(el) el.classList.remove('hidden');
+        tabs.forEach(b=> b.classList.toggle('primary', b.dataset.tab === id));
+    }
+    tabs.forEach(b=> b.addEventListener('click', ()=> showTab(b.dataset.tab)));
+    showTab('t-reg');
+</script>
+<script type="module" src="./gameboy/main.js"></script>
+<script>
+    // Reserva espacio para que siempre se vean Select/Start
+    (function(){
+        function updateHeights(){
+            const tb = document.querySelector('.toolbar');
+            const ctl = document.querySelector('.controls');
+            const root = document.documentElement;
+            root.style.setProperty('--toolbar-h', (tb?.offsetHeight||0) + 'px');
+            root.style.setProperty('--controls-h', (ctl?.offsetHeight||0) + 'px');
+        }
+        const ro = new ResizeObserver(updateHeights);
+        ro.observe(document.body);
+        document.addEventListener('DOMContentLoaded', updateHeights);
+        window.addEventListener('load', updateHeights);
+        window.addEventListener('resize', updateHeights);
+        setTimeout(updateHeights, 0);
+    })();
+</script>
+    <script>
+    // UI rendimiento: toggle FPS ilimitados + mostrar FPS
+    (function(){
+        const chk = document.getElementById('unlock-fps');
+        const fpsEl = document.getElementById('fps');
+        if(!chk || !fpsEl) return;
+
+        const LS_KEY = 'gb_unlock_fps';
+        chk.checked = localStorage.getItem(LS_KEY) === '1';
+
+        window.__perfUI = { unlockFps: chk.checked, fpsEl };
+
+        function apply(){
+            const gb = window.__gb || window.gameboy || window.gb;
+            if (gb && typeof gb.setFpsElement === 'function') gb.setFpsElement(fpsEl);
+            if (gb && typeof gb.setFpsIlimitados === 'function') gb.setFpsIlimitados(chk.checked);
+
+            window.__perfUI.unlockFps = chk.checked;
+            window.__perfUI.fpsEl = fpsEl;
+
+            localStorage.setItem(LS_KEY, chk.checked ? '1' : '0');
+        }
+
+        chk.addEventListener('change', apply);
+        apply();
+
+        // Por si el emulador se instancia más tarde (al cargar ROM), reintenta un poco.
+        let tries = 0;
+        const id = setInterval(() => {
+            tries++;
+            if (window.__gb || window.gameboy || window.gb || tries > 50) {
+                apply();
+                clearInterval(id);
+            }
+        }, 100);
+    })();
+</script>
+
+</body>
+</html>
