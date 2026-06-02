@@ -50,6 +50,8 @@ export class RegistrosCanal4{
             this.escribirVolumenYEnvoltorio(0xF3); // NR42
             this.escribirFrecuenciaYAletoriedad(0xFF) // NR13
             this.escribirControl(0xBF) // NR14
+            this.activado = false;
+            this.sonido.desactivarCanal(3);
         }
 
         // this.sonido.reproducirOnda(3, 0)
@@ -72,16 +74,14 @@ export class RegistrosCanal4{
     escribirVolumenYEnvoltorio(dato){
         this.volumenInicial = (dato & 0xF0) >> 4;
         this.volumen = this.volumenInicial;
-        this.direccionEnvoltorio = (dato & 0x80) >> 3;
+        this.direccionEnvoltorio = (dato & 0x08) >> 3;
         if(this.direccionEnvoltorio == 0) this.direccionEnv = -1;
         else this.direccionEnv = +1;
-        this.velocidadEnvoltorio = dato & 0x03;
+        this.velocidadEnvoltorio = dato & 0x07;
+        this.sonido.actualizarGanancia(3, this.volumen / 15);
         if(this.volumenInicial == 0 && this.direccionEnvoltorio == 0){
             this.activado = false;
             this.sonido.desactivarCanal(3);
-        } else {
-            this.activado = true;
-            this.sonido.activarCanal(3);
         }
     }
 
@@ -110,11 +110,21 @@ export class RegistrosCanal4{
      * @param {number} dato 
      */
     escribirControl(dato){
-        this.activado = (dato & 0x80) == 0x80 // Bit 7
+        const disparar = (dato & 0x80) == 0x80; // Bit 7
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6
         // Bits 5-0 sin usar
-        this.sonido.activarCanal(3)
-        this.activado = true;
+        if(disparar){
+            this.volumen = this.volumenInicial;
+            this.sonido.reiniciarLFSR();
+            if(this.volumenInicial != 0 || this.direccionEnvoltorio != 0){
+                this.activado = true;
+                this.sonido.activarCanal(3);
+                this.sonido.actualizarGanancia(3, this.volumen / 15);
+            } else {
+                this.activado = false;
+                this.sonido.desactivarCanal(3);
+            }
+        }
     }
 
     leerControl(){
@@ -129,8 +139,7 @@ export class RegistrosCanal4{
      * @param {number} ciclos 
      */
     enCiclos(ciclos){
-        if(true){
-        //if(this.activado){
+        if(this.activado){
             // https://gbdev.io/pandocs/Audio_Registers.html#ff12--nr12-channel-1-volume--envelope
             // 4194304 Hz / 64 Hz  = 65536 ciclos / iteracion
             if(this.velocidadEnvoltorio != 0){
@@ -141,7 +150,7 @@ export class RegistrosCanal4{
                 this.iterEnvoltorioMod =  (this.iterEnvoltorioMod + this.ciclosEnvoltorio) % this.velocidadEnvoltorio;
 
                 var volumenAnterior = this.volumen;
-                this.volumen = this.volumen - (this.direccionEnv * this.ciclosEnvoltorio);
+                this.volumen = this.volumen + (this.direccionEnv * this.ciclosEnvoltorio);
 
                 if(this.volumen < 0) this.volumen = 0;
                 if(this.volumen > 15) this.volumen = 15;

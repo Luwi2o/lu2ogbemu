@@ -169,7 +169,7 @@ export class Memoria{
         this.wRAM0 = new Uint8Array(0x1000).fill(0);
         this.wRAM1 = new Uint8Array(0x1000).fill(0);
         this.iOReg = new Uint8Array(0x80).fill(0);
-        this.hRAM = new Uint8Array(0xFFFF - 0xFF80).fill(0);
+        this.hRAM = new Uint8Array(0xFFFF - 0xFF80 + 1).fill(0);
 
         this.memoriaStr = ""
         this.tituloCartucho = "";
@@ -295,8 +295,6 @@ export class Memoria{
         switch(this.tipoCartucho){
             case GB_TIPO_CARTUCHO_ROM_SOLO:
             case GB_TIPO_CARTUCHO_MBC1:
-            case GB_TIPO_CARTUCHO_MBC2:
-            case GB_TIPO_CARTUCHO_MBC2_BATERIA:
             case GB_TIPO_CARTUCHO_MMM01:
             case GB_TIPO_CARTUCHO_MBC3_TIMER_BATERIA:
             case GB_TIPO_CARTUCHO_MBC3:
@@ -308,6 +306,11 @@ export class Memoria{
             case GB_TIPO_CARTUCHO_HuC3:
                 this.tamanyoRAM = 0; // No RAM
                 this.cantidadBancosRAM = 0;
+                break;
+            case GB_TIPO_CARTUCHO_MBC2:
+            case GB_TIPO_CARTUCHO_MBC2_BATERIA:
+                this.tamanyoRAM = 0x200; // MBC2 incluye 512 nibbles de RAM interna
+                this.cantidadBancosRAM = 1;
                 break;
             // El tipo de cartucho si tiene RAM
             default:
@@ -510,7 +513,7 @@ export class Memoria{
                 // Solo los 4 ultimos bits de los bytes se usa, el resto no estan definidos
                 // Ademas no se usa la ram externa y solo se usan los 9 ultimos bits
                 // de la direccion.
-                if(this.activadoRAM) lectura = this.sRAM[(indice & 0x01FF) - 0xA000] & 0x0F;
+                if(this.activadoRAM) lectura = this.sRAM[indice & 0x01FF] & 0x0F;
                 else lectura = 0x00;
             // MBC3
             } else if (this.tipoMBC == MBC3){
@@ -521,7 +524,8 @@ export class Memoria{
 
             // MBC5
             } else if (this.tipoMBC == MBC5){
-                lectura = this.sRAM[indice + 0x2000 * this.numeroBancoRAM - 0xA000];
+                if(this.activadoRAM) lectura = this.sRAM[indice + 0x2000 * this.numeroBancoRAM - 0xA000];
+                else lectura = 0x00;
             // ROM
             } else {
                 lectura = this.sRAM[indice - 0xA000];
@@ -662,7 +666,7 @@ export class Memoria{
             console.error("Error en intento de escritura undefined.")
             return;
         }
-        if(indice < 0 && indice >= GB_TAMANO_MEMORIA){
+        if(indice < 0 || indice >= GB_TAMANO_MEMORIA){
             console.error("Escritura en indice fuera de los limites de memoria.")
             return;
         }
@@ -808,7 +812,7 @@ export class Memoria{
                 return;
             }
             // 2000–2FFF — 8 bits menos significantes del numero de banco ROM (Solo Escritura)
-            else if(indice >= 0x2000  && indice <= 0x3FFF){
+            else if(indice >= 0x2000  && indice <= 0x2FFF){
                 this.numeroBancoROM = (this.numeroBancoROM & 0x0100) + (dato & 0xFF);
                 //console.log("Se cambia el banco a " + this.numeroBancoROM)
             }
@@ -880,15 +884,25 @@ export class Memoria{
         // A000-BFFF - 8 KiB External RAM (SRAM)
         else if(indice >= 0xA000  && indice <= 0xBFFF){
             if(this.tipoMBC == MBC1){
-                this.sRAM[indice - 0xA000] = dato;
+                if(this.activadoRAM){
+                    this.sRAM[indice + 0x2000 * this.numeroBancoRAM - 0xA000] = dato;
+                }
             // Si el tipo de MBC es MBC2 la RAM solo incluye 512 mitades de bytes
             // Solo los 4 ultimos bits de los bytes se usa, el resto no estan definidos
             // Ademas no se usa la ram externa y solo se usan los 9 ultimos bits
             // de la direccion.
             } else if(this.tipoMBC == MBC2) {
-                this.sRAM[(indice & 0x01FF) - 0xA000] = dato;
+                if(this.activadoRAM){
+                    this.sRAM[indice & 0x01FF] = dato & 0x0F;
+                }
             } else if(this.tipoMBC == MBC3){
-                this.sRAM[indice + (this.numeroBancoRAM * 0x2000) - 0xA000] = dato;
+                if(this.activadoRAM){
+                    this.sRAM[indice + (this.numeroBancoRAM * 0x2000) - 0xA000] = dato;
+                }
+            } else if(this.tipoMBC == MBC5){
+                if(this.activadoRAM){
+                    this.sRAM[indice + (this.numeroBancoRAM * 0x2000) - 0xA000] = dato;
+                }
             }
             else{
                 this.sRAM[indice - 0xA000] = dato;
@@ -962,7 +976,7 @@ export class Memoria{
                     case GB_TEMPORIZADOR_REG_DIV : this.regInt.divisor = 0x00; break;
                     case GB_INTERRUPCIONES_REG_IF : this.regInt.escribirIF(dato); break;
                     case GB_TEMPORIZADOR_REG_TAC : this.regInt.escribirTAC(dato); break;
-                    case GB_TEMPORIZADOR_REG_TIMA : this.regInt.contador = 0; break;
+                    case GB_TEMPORIZADOR_REG_TIMA : this.regInt.contador = dato; break;
                     case GB_TEMPORIZADOR_REG_TMA : this.regInt.contadorModulo = dato; break;
     
                     // Registros de Audio Maestro
@@ -1058,7 +1072,7 @@ export class Memoria{
             case GB_TEMPORIZADOR_REG_DIV : this.regInt.divisor = dato; break;
             case GB_INTERRUPCIONES_REG_IF : this.regInt.escribirIF(dato); break;
             case GB_TEMPORIZADOR_REG_TAC : this.regInt.escribirTAC(dato); break;
-            case GB_TEMPORIZADOR_REG_TIMA : this.regInt.contador = 0; break;
+            case GB_TEMPORIZADOR_REG_TIMA : this.regInt.contador = dato; break;
             case GB_TEMPORIZADOR_REG_TMA : this.regInt.contadorModulo = dato; break;
 
             case GB_SONIDO_REG_NR52 : this.regAud.escribirAudioControlMaestro(dato); break;
@@ -1089,7 +1103,7 @@ export class Memoria{
             console.error("Error en intento de escritura undefined.")
             return 0;
         }
-        if(indice < 0 && indice + 1 >= GB_TAMANO_MEMORIA){
+        if(indice < 0 || indice + 1 >= GB_TAMANO_MEMORIA){
             console.error("Lectura en indice fuera de los limites de memoria")
             return 0;
         }
@@ -1110,7 +1124,7 @@ export class Memoria{
      * @returns 
      */
     escribir16Bits(indice, dato){
-        if(indice < 0 && indice >= GB_TAMANO_MEMORIA){
+        if(indice < 0 || indice + 1 >= GB_TAMANO_MEMORIA){
             console.error("Escritura en indice fuera de los limites de memoria")
             return;
         }

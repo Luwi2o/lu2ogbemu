@@ -36,7 +36,7 @@ export class RegistrosAudio{
         this.volumenIzquierda = 0; // valor 0 - 7
         this.volumenDerecha = 0; // valor 0 - 7
 
-        if(tipoConsola = BGB_DMG0){
+        if(tipoConsola == BGB_DMG0){
             this.escribirVolumenMaestro(0x80) // NR50
             this.escribirAudioPanoramica(0xBF) // NR51
             this.escribirAudioControlMaestro(0xF1) //NR52

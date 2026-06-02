@@ -81,7 +81,7 @@ export class CPU{
                 this.H = 0;
                 this.C = 0;
                 this.actualizarFlag();
-            } else if(tipoConsola = BGB_DMG0){
+            } else if(tipoConsola == BGB_DMG0){
                 this.iME = 1;
                 this.Z = 1;
                 this.N = 0;
@@ -143,29 +143,6 @@ export class CPU{
             return;
         }
 
-        /** LD reg, mem[reg, reg]
-         * Carga en un registro un valor en memoria
-         * @param {number} regmemh Registro en la que se encuentra la parte significativa
-         * @param {number} regmeml Registro en la que se encuentra la parte menos significativa
-         * @param {number} regs Registro de destino
-         * @param {number} offset Desplazamiento a aplicar a la direccion
-         * @returns 
-         */
-        this.ld_mrr_r_8b = (regmemh, regmeml, regs, offset) => {
-            var dir = this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]);
-            this.registros.R[regs] = this.memoria.leer8Bits(dir);
-            if (offset !== undefined && offset !== 0) {
-                dir += offset
-                this.registros.R[regmemh] = this.msb(dir)
-                this.registros.R[regmeml] = this.lsb(dir)
-                this.cPUDebug.instruccionStr = ("ld_mrr_r_8b " + this.nombreR(regs) + ", (" + this.nombreR(regmemh) + this.nombreR(regmeml) + offset +")");
-            } else {
-                this.cPUDebug.instruccionStr = ("ld_mrr_r_8b " + this.nombreR(regs) + ", (" + this.nombreR(regmemh) + this.nombreR(regmeml) +")");
-            }
-            this.ciclos = 8;
-            return;
-        }
-
         /** LD reg, mem(FF00 + [reg]).
          * Lee del n-puerto de IO. 
          * @param {number} regd Registro de destino
@@ -205,8 +182,8 @@ export class CPU{
         this.ld_mrr_r_8b = (regmemh, regmeml, regs, offset) => {
             var dir = this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]);
             this.memoria.escribir8Bits(dir, this.registros.R[regs]);
-            if (offset !== undefined || offset !== 0) {
-                dir += offset
+            if (offset !== undefined && offset !== 0) {
+                dir = (dir + offset) & 0xFFFF;
                 this.registros.R[regmemh] = this.msb(dir);
                 this.registros.R[regmeml] = this.lsb(dir);
                 this.cPUDebug.instruccionStr = ("ld_mrr_r_8b (" + this.nombreR(regmemh) +  this.nombreR(regmeml) + offset + "), " + this.nombreR(regs))

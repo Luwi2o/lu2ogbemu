@@ -124,12 +124,15 @@ export class RegistrosCanal3{
      * @param {number} dato 
      */
     escribirPeriodoAltoYControl(dato){
-        this.activado = (dato & 0x80) == 0x80 // Bit 7
+        const disparar = (dato & 0x80) == 0x80 // Bit 7
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6 Lectura/Escritura
         // Bits 5-3 sin usar
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
         this.sonido.actualizarFrecuencia(2, this.periodo);
-        this.sonido.activarCanal(2)
+        if(disparar && this.activadoDAC){
+            this.activado = true;
+            this.sonido.activarCanal(2);
+        }
     }
 
     /**

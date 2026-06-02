@@ -77,10 +77,11 @@ export class RegistrosCanal2{
     escribirVolumenYEnvoltorio(dato){
         this.volumenInicial = (dato & 0xF0) >> 4;
         this.volumen = this.volumenInicial;
-        this.direccionEnvoltorio = (dato & 0x80) >> 3;
+        this.direccionEnvoltorio = (dato & 0x08) >> 3;
         if(this.direccionEnvoltorio == 0) this.direccionEnv = -1;
         else this.direccionEnv = +1;
-        this.velocidadEnvoltorio = dato & 0x03;
+        this.velocidadEnvoltorio = dato & 0x07;
+        this.sonido.actualizarGanancia(1, this.volumen / 15);
         if(this.volumenInicial == 0 && this.direccionEnvoltorio == 0){
             this.activado = false;
             this.sonido.desactivarCanal(1);
@@ -116,13 +117,17 @@ export class RegistrosCanal2{
      * @param {*} dato 
      */
     escribirPeriodoAltoYControl(dato){
-        this.activado = (dato & 0x80) == 0x80 // Bit 7
+        const disparar = (dato & 0x80) == 0x80 // Bit 7
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6
         // Bits 5-3 sin usar
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
         this.sonido.actualizarFrecuencia(1, this.periodo);
-        this.activado = true;
-        this.sonido.activarCanal(1);
+        if(disparar){
+            this.activado = true;
+            this.volumen = this.volumenInicial;
+            this.sonido.activarCanal(1);
+            this.sonido.actualizarGanancia(1, this.volumen / 15);
+        }
     }
 
     /**
@@ -152,7 +157,7 @@ export class RegistrosCanal2{
                 this.iterEnvoltorioMod =  (this.iterEnvoltorioMod + this.ciclosEnvoltorio) % this.velocidadEnvoltorio;
 
                 var volumenAnterior = this.volumen;
-                this.volumen = this.volumen - (this.direccionEnv * this.ciclosEnvoltorio);
+                this.volumen = this.volumen + (this.direccionEnv * this.ciclosEnvoltorio);
 
                 if(this.volumen < 0) this.volumen = 0;
                 if(this.volumen > 15) this.volumen = 15;

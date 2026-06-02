@@ -1,5 +1,6 @@
 import { Gameboy } from './gameboy.js';
 import { Debug } from './debug.js';
+import { setBootROM } from './bootrom.js';
 import { 
     BOTON_A, 
     BOTON_B, 
@@ -14,7 +15,6 @@ import {
 /**@type {Gameboy}*/
 let gb;
 let rom;
-let boot;
 let dbg;
 let guardado;
 
@@ -62,6 +62,7 @@ function aplicarVolumenDesdeSlider() {
         gb.sonido.actualizarVolumen(nuevoVolumen);
         console.log("volumen cambiado a:" + nuevoVolumen);
     };
+    set(Number(volumen.value));
 }
 
 function aplicarPerfUI() {
@@ -118,7 +119,7 @@ function bindUI() {
 
         const reader = new FileReader();
         reader.onload = () => {
-            boot = new Uint8Array(reader.result);
+            setBootROM(new Uint8Array(reader.result));
         };
         reader.readAsArrayBuffer(file);
 

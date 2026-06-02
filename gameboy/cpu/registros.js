@@ -86,7 +86,7 @@ export class Registros{
                     this.R[E] = 0x00;
                     this.R[H] = 0xC0;
                     this.R[L] = 0x60;
-                } else if (tipoConsola = BGB_DMG0){
+                } else if (tipoConsola == BGB_DMG0){
                     console.debug("REGISTROS: Cambiando registros a tipo de consola 'BGB_DMG0'");
                     this.R[A] = 0x01;
                     this.R[F] = 0xB0;

@@ -112,10 +112,11 @@ export class RegistrosCanal1{
     escribirVolumenYEnvoltorio(dato){
         this.volumenInicial = (dato & 0xF0) >> 4; //Bits 7-4
         this.volumen = this.volumenInicial;
-        this.direccionEnvoltorio = (dato & 0x80) >> 3; //Bit 3
+        this.direccionEnvoltorio = (dato & 0x08) >> 3; //Bit 3
         if(this.direccionEnvoltorio == 0) this.direccionEnv = -1;
         else this.direccionEnv = +1;
-        this.velocidadEnvoltorio = dato & 0x03; //Bits 2-0
+        this.velocidadEnvoltorio = dato & 0x07; //Bits 2-0
+        this.sonido.actualizarGanancia(0, this.volumen / 15);
 
         if(this.volumenInicial == 0 && this.direccionEnvoltorio == 0){
             this.activado = false;
@@ -152,13 +153,17 @@ export class RegistrosCanal1{
      * @param {*} dato 
      */
     escribirPeriodoAltoYControl(dato){
-        this.activado = (dato & 0x80) == 0x80 // Bit 7
+        const disparar = (dato & 0x80) == 0x80 // Bit 7
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6
         // Bits 5-3 sin usar
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
-        this.ciclosLongitud = 0;
-        this.activado = true;
-        this.sonido.activarCanal(0);
+        if(disparar){
+            this.ciclosLongitud = 0;
+            this.activado = true;
+            this.volumen = this.volumenInicial;
+            this.sonido.activarCanal(0);
+            this.sonido.actualizarGanancia(0, this.volumen / 15);
+        }
         this.sonido.actualizarFrecuencia(0, this.periodo);
     }
 
@@ -178,8 +183,7 @@ export class RegistrosCanal1{
      * @param {*} ciclos 
      */
     enCiclos(ciclos){
-        if(true){
-        //if(this.activado){
+        if(this.activado){
             // 128 Hz
             this.ciclosBarrido = Math.floor((this.ciclosBarridoMod + ciclos) / (65536*4))
             this.ciclosBarridoMod = (this.ciclosBarridoMod + ciclos) % (65536*4);
@@ -210,7 +214,7 @@ export class RegistrosCanal1{
                 this.iterEnvoltorioMod =  (this.iterEnvoltorioMod + this.ciclosEnvoltorio) % this.velocidadEnvoltorio;
 
                 var volumenAnterior = this.volumen;
-                this.volumen = this.volumen - (this.direccionEnv * this.ciclosEnvoltorio);
+                this.volumen = this.volumen + (this.direccionEnv * this.ciclosEnvoltorio);
 
                 if(this.volumen < 0) this.volumen = 0;
                 if(this.volumen > 15) this.volumen = 15;

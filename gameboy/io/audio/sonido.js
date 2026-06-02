@@ -44,42 +44,16 @@ export class Sonido{
             this.crearOndaCuandrada(0.75), // 00: 12.5%
         ]
 
-        this.periodoLsfr = 1;
+        this.gananciaCanal = [0, 0, 0, 0];
+        this.recorteCanal = [0.055, 0.055, 0.04, 0.014];
+        this.lfsr = 0x7FFF;
+        this.lfsrAncho7 = false;
+        this.lfsrFrecuencia = 440;
+        this.lfsrFase = 0;
+        this.lfsrSalida = 0;
 
-        /**
-         * 
-         * @param {*} audioProcessingEvent 
-         */
-        function lfsrBit7(audioProcessingEvent){
-            // The output buffer contains the samples that will be modified and played
-            let outputBuffer = audioProcessingEvent.outputBuffer;
-            let outputData = outputBuffer.getChannelData(0);
-
-            // Loop through the 4096 samples
-            for (let sample = 0; sample < outputBuffer.length; sample++) {
-                // add noise to each output sample
-                outputData[sample] = (Math.random() * 2 - 1) / 4.0;
-            }
-        }
-
-        /**
-         * 
-         * @param {*} audioProcessingEvent 
-         */
-        function lfsrBit15(audioProcessingEvent){
-            // The output buffer contains the samples that will be modified and played
-            let outputBuffer = audioProcessingEvent.outputBuffer;
-            let outputData = outputBuffer.getChannelData(0);
-
-            // Loop through the 4096 samples
-            for (let sample = 0; sample < outputBuffer.length; sample++) {
-                // add noise to each output sample
-                outputData[sample] = (Math.random() * 2 - 1) / 4.0;
-            }
-        }
-
-        // Dar al canal 4 su funcionalidad de LFSR
-        this.osciladores[3].addEventListener("audioprocess", lfsrBit7);
+        // Dar al canal 4 su funcionalidad de LFSR.
+        this.osciladores[3].addEventListener("audioprocess", (event) => this.procesarRuido(event));
 
         this.analizadores = [
             this.contextoAudio.createAnalyser(),
@@ -112,58 +86,56 @@ export class Sonido{
 
         // Dibujar en canvas
         const canvas = document.getElementById("oscilloscope");
-        if (!canvas) return;
-        const canvasCtx = /** @type {HTMLCanvasElement} */ (canvas).getContext("2d");
-        if (!canvasCtx) return;
-        canvasCtx.clearRect(0, 0, 160, 144);
-        const posX = [0, 160/2, 0, 160/2] // Posiciones X de los canales
-        const posY = [0, 0, 144/2, 144/2] // Posiciones Y de los canales
+        const canvasCtx = canvas ? /** @type {HTMLCanvasElement} */ (canvas).getContext("2d") : null;
+        if (canvas && canvasCtx) {
+            canvasCtx.clearRect(0, 0, 160, 144);
+            const posX = [0, 160/2, 0, 160/2] // Posiciones X de los canales
+            const posY = [0, 0, 144/2, 144/2] // Posiciones Y de los canales
 
-        // Dibujar las formas de onda de los canales
-        function draw() {
-            requestAnimationFrame(draw);
-            if (!canvas) return;
-            if (!canvasCtx) return;
-            const canvasElement = /** @type {HTMLCanvasElement} */ (canvas);
-            canvasCtx.fillStyle = "rgb(200 200 200)";
-            canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
-            canvasCtx.lineWidth = 1;
-            canvasCtx.strokeStyle = "rgb(0 0 0)";
-            
-            // Dibujar cada canal
-            for(var canal = 0; canal < 4; canal++){
-                analizadores[canal].getByteTimeDomainData(dataArray);
-    
-                canvasCtx.beginPath();
-    
-                const sliceWidth = ((canvasElement.width * 1.0) / 2) / bufferLength;
-                let x = posX[canal];
+            // Dibujar las formas de onda de los canales
+            function draw() {
+                requestAnimationFrame(draw);
+                const canvasElement = /** @type {HTMLCanvasElement} */ (canvas);
+                canvasCtx.fillStyle = "rgb(200 200 200)";
+                canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+                canvasCtx.lineWidth = 1;
+                canvasCtx.strokeStyle = "rgb(0 0 0)";
                 
-                // Dibujar la forma de onda
-                for (let i = 0; i < bufferLength; i++) {
-                    const v = dataArray[i] / 128.0;
-                    const y = v * canvasElement.height / 2;
-    
-                    if (i === 0) {
-                        canvasCtx.moveTo(x, posY[canal] + y/2);
-                    } else {
-                        canvasCtx.lineTo(x, posY[canal] + y/2);
+                // Dibujar cada canal
+                for(var canal = 0; canal < 4; canal++){
+                    analizadores[canal].getByteTimeDomainData(dataArray);
+        
+                    canvasCtx.beginPath();
+        
+                    const sliceWidth = ((canvasElement.width * 1.0) / 2) / bufferLength;
+                    let x = posX[canal];
+                    
+                    // Dibujar la forma de onda
+                    for (let i = 0; i < bufferLength; i++) {
+                        const v = dataArray[i] / 128.0;
+                        const y = v * canvasElement.height / 2;
+        
+                        if (i === 0) {
+                            canvasCtx.moveTo(x, posY[canal] + y/2);
+                        } else {
+                            canvasCtx.lineTo(x, posY[canal] + y/2);
+                        }
+        
+                        x += sliceWidth;
                     }
-    
-                    x += sliceWidth;
+                    canvasCtx.stroke();
                 }
-                canvasCtx.stroke();
             }
-        }
 
-        draw();
+            draw();
+        }
 
         // Inicializar ganancias
         const currentTime = this.contextoAudio.currentTime ?? 0;
-        this.ganancias[0].gain.setValueAtTime(0.05, currentTime);
-        this.ganancias[1].gain.setValueAtTime(0.05, currentTime);
-        this.ganancias[2].gain.setValueAtTime(0.05, currentTime);
-        this.ganancias[3].gain.setValueAtTime(0.05, currentTime);
+        this.actualizarGanancia(0, 0);
+        this.actualizarGanancia(1, 0);
+        this.actualizarGanancia(2, 0);
+        this.actualizarGanancia(3, 0);
 
         this.final = this.contextoAudio.createGain();
         this.volumenMaestro = /** @type {number} */ 1;
@@ -192,6 +164,7 @@ export class Sonido{
     desactivarCanal(numCanal){
         this.activados[numCanal] = false;
         if(!this.osciladores[numCanal] || !this.ganancias[numCanal]) return;
+        this.ganancias[numCanal].gain.setValueAtTime(0, this.contextoAudio.currentTime ?? 0);
         // Comprobar si el canal ya esta desconectado
         if(this.osciladores[numCanal].numberOfOutputs == 0) return;
         //this.osciladores[numCanal].disconnect(this.ganancias[numCanal])
@@ -206,7 +179,7 @@ export class Sonido{
         if(this.activados[numCanal] == false){
             this.activados[numCanal] = true;
             if(!this.osciladores[numCanal] || !this.ganancias[numCanal]) return;
-            this.osciladores[numCanal].connect(this.ganancias[numCanal]);
+            this.actualizarGanancia(numCanal, this.gananciaCanal[numCanal] ?? 0);
         }
     }
 
@@ -222,11 +195,11 @@ export class Sonido{
         for(let i = 0; i < 16; i++){
             const muestraH = ondaRAM[i] >> 4;
             for(let j = 0; j < 16; j++){
-                muestras[i * 32 + j] = muestraH;
+                muestras[i * 32 + j] = (muestraH / 7.5) - 1;
             }
             const muestraL = ondaRAM[i] & 0x0F;
             for(let j = 0; j < 16; j++){
-                muestras[i * 32 + 16 + j] = muestraL;
+                muestras[i * 32 + 16 + j] = (muestraL / 7.5) - 1;
             }
         }
         this.fft.transformar(muestras, real, imag);
@@ -267,9 +240,14 @@ export class Sonido{
      * @param {*} cambioReloj Cambio de reloj
      */
     actualizarDivisor(numCanal, divisor, cambioReloj){
-        var frecuencia =  262144 / (divisor * Math.pow(2, cambioReloj)) // Hz
-        var periodo = Math.floor(2048 / frecuencia)
-        if(periodo <= 0)  periodo = 1;
+        if(numCanal != 3) return;
+
+        const divisoresRuido = [0.5, 1, 2, 3, 4, 5, 6, 7];
+        const divisorRuido = divisoresRuido[divisor & 0x07];
+        this.lfsrFrecuencia = 262144 / (divisorRuido * Math.pow(2, cambioReloj));
+        if(!Number.isFinite(this.lfsrFrecuencia) || this.lfsrFrecuencia <= 0){
+            this.lfsrFrecuencia = 440;
+        }
     }
 
     /**
@@ -278,8 +256,11 @@ export class Sonido{
      * @param {number} ganancia Ganancia a actualizar
      */
     actualizarGanancia(numCanal, ganancia){
+        const normalizada = Math.max(0, Math.min(1, ganancia));
+        this.gananciaCanal[numCanal] = normalizada;
+        const recorte = this.recorteCanal[numCanal] ?? 0.05;
         this.ganancias[numCanal].gain.setValueAtTime(
-            ganancia, 
+            normalizada * recorte, 
             /** @type {number} */ (this.contextoAudio.currentTime ?? 0))
     }
 
@@ -330,7 +311,39 @@ export class Sonido{
      * @returns 
      */
     actualizarAnchoLFSR(dato){
-        return;
+        this.lfsrAncho7 = (dato & 0x01) == 0x01;
+    }
+
+    reiniciarLFSR(){
+        this.lfsr = 0x7FFF;
+        this.lfsrFase = 0;
+        this.lfsrSalida = 0;
+    }
+
+    /**
+     * Genera ruido de canal 4 con el LFSR de Game Boy.
+     * @param {AudioProcessingEvent} audioProcessingEvent
+     */
+    procesarRuido(audioProcessingEvent){
+        const outputBuffer = audioProcessingEvent.outputBuffer;
+        const outputData = outputBuffer.getChannelData(0);
+        const sampleRate = outputBuffer.sampleRate || this.contextoAudio.sampleRate || 44100;
+        const pasosPorMuestra = this.lfsrFrecuencia / sampleRate;
+
+        for (let sample = 0; sample < outputBuffer.length; sample++) {
+            this.lfsrFase += pasosPorMuestra;
+            while(this.lfsrFase >= 1){
+                this.lfsrFase -= 1;
+                const xor = (this.lfsr & 0x01) ^ ((this.lfsr >> 1) & 0x01);
+                this.lfsr = (this.lfsr >> 1) | (xor << 14);
+                if(this.lfsrAncho7){
+                    this.lfsr = (this.lfsr & ~(1 << 6)) | (xor << 6);
+                }
+                this.lfsrSalida = (this.lfsr & 0x01) == 0 ? 1 : -1;
+            }
+
+            outputData[sample] = this.lfsrSalida * 0.65;
+        }
     }
 
     /**

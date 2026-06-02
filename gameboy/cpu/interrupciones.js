@@ -38,22 +38,20 @@ export class Interrupciones{
         // 256 ciclos de la cpu
         var ciclosDivisorPasados = Math.floor((this.ciclosDivisor + ciclos) / 256);
         this.ciclosDivisor = (this.ciclosDivisor + ciclos) % 256;
-        this.regs.divisor = (this.regs.divisor + ciclosDivisorPasados) % 0xff;
+        this.regs.divisor = (this.regs.divisor + ciclosDivisorPasados) & 0xFF;
 
         if(this.regs.contActivado){ // Si el timer esta activado
             this.ciclosContador += ciclos;
 
-            if(this.ciclosContador >= this.regs.reloj){
-                this.regs.contador = Math.round(this.ciclosContador / this.regs.reloj);
-                // Si el valor overflows
-                if(this.regs.contador >= 0xFF){
+            while(this.ciclosContador >= this.regs.reloj){
+                this.ciclosContador -= this.regs.reloj;
+                if(this.regs.contador == 0xFF){
                     console.log("timer overflow");
-                    // El valor de TIMA se actualiza con el especificado en tMA
                     this.regs.contador = this.regs.contadorModulo;
-                    // Se pide una interrupcionesupcion de timer
                     this.regs.flagsInterrupcion[TIMER_INT] = true;
+                } else {
+                    this.regs.contador = (this.regs.contador + 1) & 0xFF;
                 }
-                this.ciclosContador %= this.regs.reloj;
             }
         } else { // Si el timer no se encuentra activado no se hace nada
             return;
