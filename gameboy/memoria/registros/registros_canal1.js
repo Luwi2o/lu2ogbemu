@@ -233,7 +233,6 @@ export class RegistrosCanal1{
                 this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 32768;
                 if(this.ciclosLongitud >= 64){
                     if(this.activado){
-                        console.log("canal 0 ha llegado a la longitud")
                         this.activado = false;
                         this.sonido.desactivarCanal(0);
                     }

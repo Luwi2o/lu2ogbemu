@@ -46,7 +46,6 @@ export class Interrupciones{
             while(this.ciclosContador >= this.regs.reloj){
                 this.ciclosContador -= this.regs.reloj;
                 if(this.regs.contador == 0xFF){
-                    console.log("timer overflow");
                     this.regs.contador = this.regs.contadorModulo;
                     this.regs.flagsInterrupcion[TIMER_INT] = true;
                 } else {

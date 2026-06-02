@@ -81,7 +81,6 @@ export class RegistrosInterrupciones{
         // Bit 2
         // Enable: Controla si el TIMA se incrementa. DIV siempre cuenta no importa este bit.
         this.contActivado = (dato & 0x04) == 0x04;
-        if(this.contActivado)console.log("timer enabled");
         // Bit 1 y 0;
         this.seleccionReloj = dato & 0x03;
         this.reloj = this.tablaSeleccionRelojes[this.seleccionReloj];
@@ -108,7 +107,6 @@ export class RegistrosInterrupciones{
         // Bit 2
         // Enable: Controla si el TIMA se incrementa. DIV siempre cuenta no importa este bit.
         this.contActivado = (dato & 0x04) == 0x04;
-        if(this.contActivado)console.log("timer enabled");
         // Bit 1 y 0;
         this.seleccionReloj = dato & 0x03;
         this.reloj = this.tablaSeleccionRelojes[this.seleccionReloj];

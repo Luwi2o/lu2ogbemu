@@ -381,10 +381,11 @@ export class Pantalla{
             // Horizontal Blank
             case 0:
                 // Se espera al final de la linea
-                // Duracion 376 dots
+                // Duracion 204 dots. Una linea completa son 456 dots:
+                // OAM 80 + pixel transfer 172 + HBlank 204.
                 // Se puede acceder VRAM, OAM, y paletas CGB
                 
-                if(this.dots >= 376){
+                if(this.dots >= 204){
                     this.dots = 0;
                     this.linea++;
 
@@ -413,14 +414,13 @@ export class Pantalla{
                     
                     this.ventanaVisible = false;
                     // Se pasa al modo de busqueda de OAM
-                    if(this.linea <= 144){
+                    if(this.linea < 144){
                         this.regLCD.ModeFlag = 2;
                         this.modo = 2;
                         // TODO this.memoria.bloqueoOAM = true;
                         // Si está activada la interrupcion STAT en modo 2
                         if(this.regLCD.interrupcionEstadoEnModo2){
                             // Se pide una interrupcion de lcdstat
-                            console.log("interrupcion modo2")
                             this.ints.regs.flagsInterrupcion[LCDSTAT_INT] = true;
                         }
 
@@ -432,7 +432,6 @@ export class Pantalla{
                         // Si está activada la interrupcion STAT en modo 1
                         if(this.regLCD.interrupcionEstadoEnModo1){
                             // Se pide una interrupcion de lcdstat
-                            console.log("interrupcion modo1")
                             this.ints.regs.flagsInterrupcion[LCDSTAT_INT] = true;
                         }
                         // https://gbdev.io/pandocs/Interrupt_Sources.html#int-40--vblank-interrupt
@@ -449,7 +448,7 @@ export class Pantalla{
                 // Se espera hasta el siguiente frame
                 // Duracion 4560 dots (456 * 10)
                 // Se puede acceder VRAM, OAM, y paletas CGB
-                if(this.dots > 456){
+                if(this.dots >= 456){
                     this.dots = 0;
                     this.linea++;
                     this.regLCD.lineaY = this.linea;
@@ -467,7 +466,6 @@ export class Pantalla{
                         // Si está activada la interrupcion STAT en modo 2
                         if(this.regLCD.interrupcionEstadoEnModo2){
                             // Se pide una interrupcion de lcdstat
-                            console.log("interrupcion modo2")
                             this.ints.regs.flagsInterrupcion[LCDSTAT_INT] = true;
                         }
                     }

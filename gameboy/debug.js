@@ -64,6 +64,7 @@ class Debug{
 
         var gameboy = this.gameboy;
         var debug = this;
+        var debugRoot = document.querySelector(".debug");
 
         function mostrarRegistrosCPU(){
             document.getElementById("regAF").innerHTML =
@@ -226,8 +227,7 @@ class Debug{
                 window.requestAnimationFrame(dibujarDebug);
                 // Si está en pausa, no actualizar nada
                 if(debug.pausado) return;
-
-                mostrarPila()
+                if(debugRoot?.classList.contains("hidden")) return;
 
                 document.getElementById("instruccion").innerHTML = gameboy.cPUDebug.instruccionPC + 
                     ": codigo: " +gameboy.cPUDebug.codigoStr + ", instr: " + gameboy.cPUDebug.instruccionStr;
@@ -237,7 +237,11 @@ class Debug{
                 mostrarRegistrosCPU();
                 mostrarFlagsCPU();
                 mostrarRegistrosMemoria();
-                mostrarMemoria()
+                const otrosVisible = !document.getElementById("t-otros")?.classList.contains("hidden");
+                if(otrosVisible){
+                    mostrarPila();
+                    mostrarMemoria();
+                }
             }, 100)
         }
 
