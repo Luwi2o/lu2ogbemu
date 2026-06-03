@@ -28,7 +28,9 @@ export class RegistrosInterrupciones{
 
         // Registros de timers
         // Timer counter
-        this.tablaSeleccionRelojes = [256, 4, 16, 64];
+        // Periodos de TIMA en ciclos de CPU (T-cycles/dots):
+        // 4096, 262144, 65536 y 16384 Hz respectivamente.
+        this.tablaSeleccionRelojes = [1024, 16, 64, 256];
         this.contador = 0;
         this.contadorModulo = 0;
 
