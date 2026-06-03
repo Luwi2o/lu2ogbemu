@@ -284,7 +284,7 @@ export class CPU{
             var dir = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.PC++),
                 this.memoria.leer8Bits(this.registros.PC++));
             this.registros.SP = dir;
-            this.ciclos = 20;
+            this.ciclos = 12;
             this.cPUDebug.instruccionStr = ("ld_sp_ii_16b SP, " + dir.toString(16))
         }
         
@@ -305,7 +305,7 @@ export class CPU{
         this.ld_hl_sp_imm_16b = () => {
             var e = this.memoria.leer8Bits(this.registros.PC++)
             e = e << 24 >> 24;
-            var spe = this.registros.SP + e
+            var spe = (this.registros.SP + e) & 0xFFFF;
             this.C = 0; this.H = 0; this.N = 0; this.Z = 0;
             if((this.registros.SP & 0xFF) + (e & 0xFF) > 0xFF) this.C = 1;
             if((this.registros.SP & 0x0F) + (e & 0x0F) > 0x0F) this.H = 1;

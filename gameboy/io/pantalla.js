@@ -51,6 +51,7 @@ export class Pantalla{
         this.BGTileMapAreaLinea = false;
         this.BGWindowTileDataAreaLinea = false;
         this._statLYCPrev = false;
+        this.lcdEnableAnterior = this.regLCD.LCDEnable;
         this.debugColorearCapas = false; // Poner a false para volver al render normal
         this._debugColorCapas32 = null;
 
@@ -555,6 +556,39 @@ export class Pantalla{
      * @param {number} ciclos 
      */
     enCiclos(ciclos){
+        // Cuando LCDC.7 esta apagado, la PPU se detiene: LY queda en 0 y no
+        // se dibujan lineas. Algunos juegos usan este periodo para reescribir
+        // VRAM.
+        if(!this.regLCD.LCDEnable){
+            this.lcdEnableAnterior = false;
+            this.dots = 0;
+            this.linea = 0;
+            this.lineaVentana = 0;
+            this.ventanaVisible = false;
+            this.regLCD.lineaY = 0;
+            this.regLCD.ModeFlag = 0;
+            this.modo = 0;
+            this.regLCD.condicionWY = false;
+            this.actualizarCoincidenciaLYC();
+            return;
+        }
+
+        // Al reactivar la LCD el hardware empieza un nuevo frame desde Mode 2.
+        // Reiniciar estos contadores evita arrastrar el estado anterior de PPU.
+        if(!this.lcdEnableAnterior){
+            this.lcdEnableAnterior = true;
+            this.dots = 0;
+            this.linea = 0;
+            this.lineaVentana = 0;
+            this.ventanaVisible = false;
+            this.regLCD.lineaY = 0;
+            this.regLCD.ModeFlag = 2;
+            this.modo = 2;
+            this.regLCD.condicionWY = false;
+            this.actualizarCondicionWYInicioModo2();
+            this.actualizarCoincidenciaLYC();
+        }
+
         // https://gbdev.io/pandocs/pixel_fifo.html
         // En cada ciclo de cpu a velocidad normal hay 4 dots
         this.dots += ciclos;

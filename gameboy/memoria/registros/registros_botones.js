@@ -38,34 +38,37 @@ export class RegistrosBotones{
      */
     leerRegBotones(){
         // https://gbdev.io/pandocs/Joypad_Input.html#ff00--p1joyp-joypad
-        // Si el bit 5 y el 4 estan activados los botones se leen activados
-        if(this.seleccion == SELECCIONADO_AMBOS){
-            return(
-                (this.esBoton? 1:0) << 5 |
-                (this.esDireccional? 1:0) << 4 |
-                0xF
-            )
-        } else if(this.seleccion == SELECCIONADO_BOTONES){
-            return(
-                (this.esBoton? 1:0) << 5 |
-                (this.esDireccional? 1:0) << 4 |
-                (this.botones[3]? 1:0) << 3 |
-                (this.botones[2]? 1:0) << 2 |
-                (this.botones[1]? 1:0) << 1 |
-                (this.botones[0]? 1:0)
-            );
-        } else if(this.seleccion == SELECCIONADO_DIRECCION){
-            return(
-                (this.esBoton? 1:0) << 5 |
-                (this.esDireccional? 1:0) << 4 |
-                (this.direccionales[3]? 1:0) << 3 |
-                (this.direccionales[2]? 1:0) << 2 |
-                (this.direccionales[1]? 1:0) << 1 |
-                (this.direccionales[0]? 1:0)
-            );
-        } else{
-            console.error("Estado de botones no valido");
+        const seleccionBotones = !this.esBoton;
+        const seleccionDireccional = !this.esDireccional;
+
+        const bitsBotones = (
+            (this.botones[3]? 1:0) << 3 |
+            (this.botones[2]? 1:0) << 2 |
+            (this.botones[1]? 1:0) << 1 |
+            (this.botones[0]? 1:0)
+        );
+        const bitsDireccionales = (
+            (this.direccionales[3]? 1:0) << 3 |
+            (this.direccionales[2]? 1:0) << 2 |
+            (this.direccionales[1]? 1:0) << 1 |
+            (this.direccionales[0]? 1:0)
+        );
+
+        var bitsEntrada = 0x0F;
+        if(seleccionBotones && seleccionDireccional){
+            bitsEntrada = bitsBotones & bitsDireccionales;
+        } else if(seleccionBotones){
+            bitsEntrada = bitsBotones;
+        } else if(seleccionDireccional){
+            bitsEntrada = bitsDireccionales;
         }
+
+        return(
+            0xC0 |
+            (this.esBoton? 1:0) << 5 |
+            (this.esDireccional? 1:0) << 4 |
+            bitsEntrada
+        );
     }
 
     /**
@@ -82,6 +85,8 @@ export class RegistrosBotones{
 
         // Los dos activados
         if(this.esBoton && this.esDireccional){
+            this.seleccion = SELECCIONADO_AMBOS;
+        } else if(!this.esBoton && !this.esDireccional){
             this.seleccion = SELECCIONADO_AMBOS;
         } else if(!this.esBoton){
             this.seleccion = SELECCIONADO_BOTONES;
