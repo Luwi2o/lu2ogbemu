@@ -44,7 +44,15 @@ export class Pantalla{
         this.terminada = false;
         this.scrollXLinea = 0;
         this.scrollYLinea = 0;
+        this.windowXLinea = 0;
+        this.windowYLinea = 0;
+        this.duracionModo3 = 172;
+        this.duracionModo0 = 204;
+        this.BGTileMapAreaLinea = false;
+        this.BGWindowTileDataAreaLinea = false;
         this._statLYCPrev = false;
+        this.debugColorearCapas = false; // Poner a false para volver al render normal
+        this._debugColorCapas32 = null;
 
         this.canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameboy-canvas"));
         this.contexto = this.canvas.getContext("2d", { alpha: false });
@@ -65,16 +73,22 @@ export class Pantalla{
         if (this.contexto) {
             this.contexto.imageSmoothingEnabled = false;
         }
+
+        this.actualizarCondicionWYInicioModo2();
     }
 
     /**
-     * Captura los registros de scroll usados para renderizar la linea actual.
-     * Los juegos pueden escribir SCX/SCY durante HBlank para preparar la
+     * Captura los registros de posicion usados para renderizar la linea actual.
+     * Los juegos pueden escribir SCX/SCY/WX/WY durante HBlank para preparar la
      * siguiente scanline; no debe cambiar retroactivamente una linea ya activa.
      */
     capturarScrollLinea(){
         this.scrollXLinea = this.regLCD.scrollX & 0xFF;
         this.scrollYLinea = this.regLCD.scrollY & 0xFF;
+        this.windowXLinea = this.regLCD.windowX & 0xFF;
+        this.windowYLinea = this.regLCD.windowY & 0xFF;
+        this.BGTileMapAreaLinea = this.regLCD.BGTileMapArea;
+        this.BGWindowTileDataAreaLinea = this.regLCD.BGWindowTileDataArea;
     }
 
     /**
@@ -88,6 +102,111 @@ export class Pantalla{
             this.ints.regs.flagsInterrupcion[LCDSTAT_INT] = true;
         }
         this._statLYCPrev = match;
+    }
+
+    /**
+     * Comprueba la condición WY al inicio de Mode 2, que es cuando el hardware
+     * decide si la ventana puede empezar a aparecer durante este frame.
+     */
+    actualizarCondicionWYInicioModo2(){
+        const reg = this.regLCD;
+
+        // La comparación WY/LY ocurre al comienzo de la búsqueda OAM. Que la
+        // ventana se dibuje después depende de LCDC.0/LCDC.5 y de WX.
+        if(reg.lineaY === reg.windowY){
+            reg.condicionWY = true;
+        }
+    }
+
+    /**
+     * Aproxima cuánto dura Mode 3 para esta scanline. Muchas demos sincronizan
+     * escrituras raster con HBlank, así que no puede ser siempre 172 ciclos.
+     */
+    calcularDuracionModo3Linea(){
+        let duracion = 172;
+
+        // El descarte inicial por SCX fino retrasa el momento en que empieza
+        // HBlank. Sin esto, las interrupciones HBlank llegan demasiado pronto.
+        duracion += this.scrollXLinea & 7;
+
+        // Al entrar en Window se vacía el FIFO y se reinicia el fetcher, lo que
+        // alarga Mode 3 en las líneas donde la ventana se ve.
+        if(this.ventanaVisible) duracion += 8;
+
+        // Mantener un máximo razonable evita que una aproximación deje una
+        // línea sin tiempo suficiente de HBlank.
+        return Math.min(289, duracion);
+    }
+
+    /**
+     * Determina si la ventana llega a verse en la scanline actual.
+     */
+    esVentanaVisibleEnLinea(){
+        const reg = this.regLCD;
+        const windowStart = ((this.windowXLinea|0) - 7) | 0;
+        const windowActive = reg.BGWindowEnable && reg.windowEnable && reg.condicionWY;
+        const winStartX = windowActive ? Math.min(GB_PANTALLA_ANCHO, Math.max(0, windowStart)) : GB_PANTALLA_ANCHO;
+
+        return windowActive && winStartX < GB_PANTALLA_ANCHO;
+    }
+
+    /**
+     * Empaqueta un color RGBA para poder escribirlo directamente en ImageData
+     * usando la vista Uint32 del framebuffer.
+     * @param {[number, number, number, number]} color
+     * @returns {number}
+     */
+    empaquetarColor32(color){
+        // En little-endian, escribir 0xAABBGGRR produce bytes [RR,GG,BB,AA].
+        return this._littleEndian
+            ? (((color[3] << 24) | (color[2] << 16) | (color[1] << 8) | color[0]) >>> 0)
+            : (((color[0] << 24) | (color[1] << 16) | (color[2] << 8) | color[3]) >>> 0);
+    }
+
+    /**
+     * Mezcla el color real con un tinte de capa. Así el debug muestra de qué
+     * capa viene el pixel sin perder los tonos de gris del tile renderizado.
+     * @param {[number, number, number, number]} color
+     * @param {[number, number, number]} tinte
+     * @returns {number}
+     */
+    mezclarColorDebugCapa32(color, tinte){
+        const pesoGris = 0.65;
+        const pesoTinte = 1 - pesoGris;
+        return this.empaquetarColor32([
+            Math.round((color[0] * pesoGris) + (tinte[0] * pesoTinte)),
+            Math.round((color[1] * pesoGris) + (tinte[1] * pesoTinte)),
+            Math.round((color[2] * pesoGris) + (tinte[2] * pesoTinte)),
+            color[3]
+        ]);
+    }
+
+    /**
+     * Colores tintados para depurar qué capa ha escrito cada pixel visible.
+     * Fondo = azul, ventana = verde, sprites = rojo, manteniendo grises.
+     * @param {Array<[number, number, number, number]>} coloresRGBA
+     */
+    obtenerColoresDebugCapas32(coloresRGBA){
+        if(!this._debugColorCapas32 || this._debugColorCapas32.coloresRGBA !== coloresRGBA){
+            const fondo = new Uint32Array(coloresRGBA.length);
+            const ventana = new Uint32Array(coloresRGBA.length);
+            const sprite = new Uint32Array(coloresRGBA.length);
+
+            for(let i=0; i<coloresRGBA.length; i++){
+                fondo[i] = this.mezclarColorDebugCapa32(coloresRGBA[i], [40, 90, 255]);
+                ventana[i] = this.mezclarColorDebugCapa32(coloresRGBA[i], [40, 220, 90]);
+                sprite[i] = this.mezclarColorDebugCapa32(coloresRGBA[i], [255, 60, 60]);
+            }
+
+            this._debugColorCapas32 = {
+                coloresRGBA,
+                fondo,
+                ventana,
+                sprite
+            };
+        }
+
+        return this._debugColorCapas32;
     }
 
     /**
@@ -153,6 +272,7 @@ export class Pantalla{
             reg.valorColor32 = colores32;
         }
         const colores32 = reg.valorColor32;
+        const coloresDebugCapas = this.debugColorearCapas ? this.obtenerColoresDebugCapas32(reg.valorColor) : null;
 
         // La máscara permite extraer el bit de color correspondiente dentro de
         // los dos bytes que forman una fila de tile. indicesBGLinea se guarda
@@ -188,24 +308,26 @@ export class Pantalla{
         // https://gbdev.io/pandocs/Window.html#window-rendering-criteria
         // WY no dibuja la ventana por sí solo: solo habilita la condición
         // vertical. La condición horizontal depende de WX y de llegar a su X.
-        if(lineaLCD === reg.windowY) reg.condicionWY = true;
+        // La condición WY se actualiza al inicio de Mode 2, no aquí: hacerlo
+        // durante el render permitiría activar la ventana demasiado tarde.
 
-        const windowStart = ((reg.windowX|0) - 7) | 0;   // Primer x dentro de ventana
+        const windowStart = ((this.windowXLinea|0) - 7) | 0;   // Primer x dentro de ventana
         const windowActive = reg.BGWindowEnable && reg.windowEnable && reg.condicionWY;
-        const winStartX = windowActive ? Math.max(0, windowStart) : anchoPantalla;
+        const winStartX = windowActive ? Math.min(anchoPantalla, Math.max(0, windowStart)) : anchoPantalla;
 
         // ventanaVisible se usa fuera de esta función para avanzar el contador
         // interno de línea de ventana solo cuando realmente se ha dibujado.
         if(windowActive && winStartX < anchoPantalla) this.ventanaVisible = true;
-        if((reg.windowX|0) <= 7) reg.condicionWX = true;
+        if((this.windowXLinea|0) <= 7) reg.condicionWX = true;
 
         // Fondo / Window
         if(reg.BGWindowEnable){
             // Los registros LCDC eligen qué mapa de tiles usar para BG/Window
             // y si los índices de tile se interpretan con base 0x8000 o 0x9000.
-            const bgMapBase  = reg.BGTileMapArea ? 0x9C00 : 0x9800;
+            const bgMapBase  = this.BGTileMapAreaLinea ? 0x9C00 : 0x9800;
             const winMapBase = reg.windowTileMapArea ? 0x9C00 : 0x9800;
-            const dataBase   = reg.BGWindowTileDataArea ? 0x8000 : 0x9000;
+            const bgDataBase = this.BGWindowTileDataAreaLinea ? 0x8000 : 0x9000;
+            const winDataBase = reg.BGWindowTileDataArea ? 0x8000 : 0x9000;
 
             // BG: y constante en la línea
             // SCY/SCX desplazan el fondo circular de 256x256; por eso se
@@ -231,9 +353,9 @@ export class Pantalla{
 
                     // En el modo 0x9000 el identificador del tile es signed:
                     // valores 128..255 apuntan a tiles negativos alrededor de 0x9000.
-                    if(!reg.BGWindowTileDataArea) tileId = (tileId << 24) >> 24;
+                    if(!this.BGWindowTileDataAreaLinea) tileId = (tileId << 24) >> 24;
 
-                    const direccionTile = (dataBase + (tileId * 16) + (filaEnTileBG<<1)) - 0x8000;
+                    const direccionTile = (bgDataBase + (tileId * 16) + (filaEnTileBG<<1)) - 0x8000;
                     byteBajoTile = vram[direccionTile];
                     byteAltoTile = vram[direccionTile + 1];
                 }
@@ -243,7 +365,11 @@ export class Pantalla{
                 // Guardar el índice sin paleta mantiene la regla de prioridad
                 // de sprites: solo importa si el BG era color 0 o no.
                 indicesBGLinea[x] = indiceColor;
-                framebuffer32[offsetLinea + x] = colores32[paletaBGVentana[indiceColor]];
+                // En modo debug interesa saber que este pixel viene del fondo,
+                // manteniendo el tono de gris que habría usado la paleta real.
+                framebuffer32[offsetLinea + x] = coloresDebugCapas
+                    ? coloresDebugCapas.fondo[paletaBGVentana[indiceColor]]
+                    : colores32[paletaBGVentana[indiceColor]];
             }
 
             // Segmento Window: [winStartX, 160)
@@ -270,7 +396,7 @@ export class Pantalla{
                         // valores 128..255 apuntan a tiles negativos alrededor de 0x9000.
                         if(!reg.BGWindowTileDataArea) tileId = (tileId << 24) >> 24;
 
-                        const direccionTile = (dataBase + (tileId * 16) + (filaEnTileVentana<<1)) - 0x8000;
+                        const direccionTile = (winDataBase + (tileId * 16) + (filaEnTileVentana<<1)) - 0x8000;
                         byteBajoTile = vram[direccionTile];
                         byteAltoTile = vram[direccionTile + 1];
                     }
@@ -278,7 +404,11 @@ export class Pantalla{
                     const mascaraPixel = mascaraBitPixel[xVentana & 7];
                     const indiceColor = ((byteBajoTile & mascaraPixel) ? 1 : 0) | ((byteAltoTile & mascaraPixel) ? 2 : 0);
                     indicesBGLinea[x] = indiceColor;
-                    framebuffer32[offsetLinea + x] = colores32[paletaBGVentana[indiceColor]];
+                    // En modo debug interesa separar claramente ventana de BG,
+                    // manteniendo el tono de gris que habría usado la paleta real.
+                    framebuffer32[offsetLinea + x] = coloresDebugCapas
+                        ? coloresDebugCapas.ventana[paletaBGVentana[indiceColor]]
+                        : colores32[paletaBGVentana[indiceColor]];
                 }
             }
         } else {
@@ -287,7 +417,11 @@ export class Pantalla{
             // línea como color 0 para aplicar bien sus reglas de prioridad.
             const blanco = colores32[0];
             indicesBGLinea.fill(0);
-            for(let x=0; x<anchoPantalla; x++) framebuffer32[offsetLinea + x] = blanco;
+            for(let x=0; x<anchoPantalla; x++){
+                framebuffer32[offsetLinea + x] = coloresDebugCapas
+                    ? coloresDebugCapas.fondo[0]
+                    : blanco;
+            }
         }
 
         // Sprites: por pixel (lógica antigua)
@@ -374,7 +508,11 @@ export class Pantalla{
                     // Si prioridad está activa, el sprite solo tapa al fondo
                     // cuando el pixel de BG/Window era color 0.
                     if (!objeto.prioridad || indicesBGLinea[x] === 0) {
-                        framebuffer32[offsetLinea + x] = colores32[paletaObjeto[indiceColor]];
+                        // En modo debug solo coloreamos sprites visibles: si el
+                        // sprite queda oculto por prioridad, se conserva BG/Window.
+                        framebuffer32[offsetLinea + x] = coloresDebugCapas
+                            ? coloresDebugCapas.sprite[paletaObjeto[indiceColor]]
+                            : colores32[paletaObjeto[indiceColor]];
                     }
                 }
             }
@@ -431,11 +569,13 @@ export class Pantalla{
 
                 // Se pasa al modo 3
                 if(this.dots >= 80){
-                    this.dots = 0; // Se resetea la cuenta de dots
+                    this.dots -= 80;
                     this.regLCD.ModeFlag = 3;
                     this.modo = 3; // Modo de dibujo de pixeles
                     this.capturarScrollLinea();
-                    this.dibujarLinea();
+                    this.ventanaVisible = this.esVentanaVisibleEnLinea();
+                    this.duracionModo3 = this.calcularDuracionModo3Linea();
+                    this.duracionModo0 = 456 - 80 - this.duracionModo3;
                     // TODO this.memoria.bloqueoVRAM = true; // Se desbloquea la RAM
                 }
                 break;
@@ -446,8 +586,9 @@ export class Pantalla{
                 // No se puede acceder a VRAM ni a OAM
 
                 // Se pasa al modo 0
-                if(this.dots >= 172){
-                    this.dots = 0;
+                if(this.dots >= this.duracionModo3){
+                    this.dots -= this.duracionModo3;
+                    this.dibujarLinea();
                     this.regLCD.ModeFlag = 0;
                     this.modo = 0;
                     // Si está activada la interrupcion STAT en modo 0
@@ -461,12 +602,12 @@ export class Pantalla{
             // Horizontal Blank
             case 0:
                 // Se espera al final de la linea
-                // Duracion 204 dots. Una linea completa son 456 dots:
-                // OAM 80 + pixel transfer 172 + HBlank 204.
+                // Duracion base 204 dots. Una linea completa son 456 dots:
+                // OAM 80 + pixel transfer variable + HBlank ajustado.
                 // Se puede acceder VRAM, OAM, y paletas CGB
                 
-                if(this.dots >= 204){
-                    this.dots = 0;
+                if(this.dots >= this.duracionModo0){
+                    this.dots -= this.duracionModo0;
                     this.linea++;
 
                     this.regLCD.lineaY = this.linea;
@@ -480,6 +621,7 @@ export class Pantalla{
                     if(this.linea < 144){
                         this.regLCD.ModeFlag = 2;
                         this.modo = 2;
+                        this.actualizarCondicionWYInicioModo2();
                         // TODO this.memoria.bloqueoOAM = true;
                         // Si está activada la interrupcion STAT en modo 2
                         if(this.regLCD.interrupcionEstadoEnModo2){
@@ -512,7 +654,7 @@ export class Pantalla{
                 // Duracion 4560 dots (456 * 10)
                 // Se puede acceder VRAM, OAM, y paletas CGB
                 if(this.dots >= 456){
-                    this.dots = 0;
+                    this.dots -= 456;
                     this.linea++;
                     this.regLCD.lineaY = this.linea;
                     this.actualizarCoincidenciaLYC();
@@ -525,6 +667,8 @@ export class Pantalla{
                         this.linea = 0; // Contador de linea se reinicia
                         this.regLCD.lineaY = this.linea;
                         this.actualizarCoincidenciaLYC();
+                        this.regLCD.condicionWY = false;
+                        this.actualizarCondicionWYInicioModo2();
                         this.lineaVentana = 0; // Contador de linea de ventana se reinicia
 
                         //TODO this.memoria.bloqueoOAM = true;
