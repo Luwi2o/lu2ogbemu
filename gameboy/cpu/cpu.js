@@ -2562,7 +2562,7 @@ export class CPU{
      * D
      */
    ciclo(){
-        this.rutinaInterrupcion();
+        if(this.rutinaInterrupcion()) return;
 
         if (this.halted) {
             this.ciclos = 4;
@@ -2602,7 +2602,7 @@ export class CPU{
 
     rutinaInterrupcion(){
         // Si el IME esta a 0 las interrupciones estan desactivadas
-        if(this.iME == 0 && !this.halted) return;
+        if(this.iME == 0 && !this.halted) return false;
 
         var intActivada = false;
         var i = 0;
@@ -2611,7 +2611,6 @@ export class CPU{
             // Solo se ejecutarán las interrupciones si el registro IE esta activado
             if(this.interrupciones.regs.interrupcionActivada[i]){
                 if(this.interrupciones.regs.flagsInterrupcion[i]){
-                    if(i == TIMER_INT) console.debug("LCDSTAT_INT lanzada");
                     intActivada = true;
                 } else i++;
             }
@@ -2635,9 +2634,10 @@ export class CPU{
             this.memoria.escribir8Bits(this.registros.SP, this.lsb(this.registros.PC));
             // PC se actualiza con la direccion del manejador de la instruccion.
             this.registros.PC = this.interrupciones.regs.iHandlerDir[i];
-            this.ciclos += 5;
+            this.ciclos = 20;
+            return true;
         }
-        return;
+        return false;
     }
 
 
