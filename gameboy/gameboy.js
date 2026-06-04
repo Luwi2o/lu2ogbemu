@@ -283,6 +283,10 @@ export class Gameboy{
     destruir(){
         this.ejecutando = false;
         if (this.raf) cancelAnimationFrame(this.raf);
+        this.sonido?.destruir?.();
+        if (typeof window !== 'undefined' && window.__gb === this) {
+            window.__gb = null;
+        }
     }
 
 }

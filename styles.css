@@ -213,10 +213,23 @@ input[type="range"]{
   background:var(--lcd);
   border:clamp(14px, 2.4vw, 24px) solid var(--screen-shell);
   border-radius:8px 8px 28px 8px;
-  box-shadow:
-    inset 0 0 0 2px rgba(255,255,255,.12),
-    inset 0 0 28px rgba(0,0,0,.20),
-    0 5px 0 rgba(73,70,60,.24);
+}
+
+.demo-overlay{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  display:grid;
+  place-items:center;
+}
+
+.demo-overlay.hidden{ display:none; }
+
+.demo-button{
+  min-height:44px;
+  padding:.7rem 1rem;
+  border-width:2px;
+  box-shadow:var(--inner-shadow), 0 3px 0 rgba(72,65,45,.30);
 }
 
 .lcd::before{
@@ -225,9 +238,6 @@ input[type="range"]{
   inset:-1px;
   z-index:2;
   pointer-events:none;
-  background:
-    linear-gradient(rgba(255,255,255,.08), transparent 22%),
-    radial-gradient(ellipse at center, transparent 52%, rgba(31,51,39,.22));
   mix-blend-mode:multiply;
 }
 
@@ -286,6 +296,30 @@ canvas#gameboy-canvas{
 }
 
 .dpad .spacer{ pointer-events:none; }
+
+.dpad .btn.round{
+  background:#2d302f;
+  color:#ece8da;
+  border-color:#171918;
+  border-radius:5px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -3px 0 rgba(0,0,0,.28),
+    0 2px 0 rgba(72,65,45,.28);
+}
+
+.dpad .btn.round:hover{
+  background:#383c3a;
+  border-color:#111312;
+}
+
+.dpad .btn.round:active,
+.dpad .btn.round.is-pressed{
+  background:#1f2221;
+  border-color:#0d0f0e;
+  transform:translateY(2px);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.42);
+}
 
 .abgrid{
   display:grid;

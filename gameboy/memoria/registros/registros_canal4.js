@@ -1,13 +1,14 @@
-
 // @ts-check
+
 import { Sonido } from "../../io/audio/sonido.js";
 import { BGB_DMG0, DIR_RESTAR, DIR_SUMAR } from "../../constantes.js";
 
 
 /** ------- Clase Canal 4 -------- */
 export class RegistrosCanal4{
+    
     /**
-     * 
+     * Constructor de registros de canal 4
      * @param {number} tipoConsola 
      * @param {Sonido} sonido 
      */

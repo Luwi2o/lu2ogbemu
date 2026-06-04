@@ -18,6 +18,7 @@ let gb;
 let rom;
 let dbg;
 let guardado;
+let romDemo;
 
 const $ = (id) => document.getElementById(id);
 
@@ -61,6 +62,17 @@ function arrancarConROM(romBytes){
     aplicarVolumenDesdeSlider();
     aplicarPerfUI();
     aplicarLCDDesdeUI();
+    actualizarOverlayDemo(false);
+}
+
+function actualizarOverlayDemo(visible, texto = "Ver demo") {
+    const overlay = $("demo-overlay");
+    const boton = $("boton-ver-demo");
+    if(!overlay || !boton) return;
+
+    overlay.classList.toggle("hidden", !visible);
+    boton.disabled = !visible || !romDemo;
+    boton.textContent = texto;
 }
 
 function aplicarVolumenDesdeSlider() {
@@ -206,11 +218,19 @@ function bindUI() {
     $("boton-cargar-boot").addEventListener("click", 
         () => {abrirFilePicker("archivo-boot");}
     );
+    $("boton-ver-demo")?.addEventListener("click", async () => {
+        if(!romDemo) return;
+        arrancarConROM(romDemo);
+        await gb?.sonido?.desbloquear?.();
+    });
     
     // Input ROM
     $("archivo-rom")?.addEventListener("change", (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        destruirInstanciaActual();
+        actualizarOverlayDemo(false);
 
         const reader = new FileReader();
         reader.onload = () => {
@@ -363,13 +383,15 @@ function mapearControles() {
 
 window.addEventListener("load", async () => {
     bindUI();
+    actualizarOverlayDemo(true, "Cargando demo...");
 
     try {
         const result = await fetch(DEFAULT_ROM, { cache: "no-store" });
         if (!result.ok) throw new Error(`No se pudo obtener ${DEFAULT_ROM} (${result.status})`);
-        const bytes = new Uint8Array(await result.arrayBuffer());
-        arrancarConROM(bytes);
+        romDemo = new Uint8Array(await result.arrayBuffer());
+        actualizarOverlayDemo(true);
     } catch (err) {
         console.warn("[Game Boy] Falló la autocarga de la ROM inicial:", err);
+        actualizarOverlayDemo(true, "Demo no disponible");
     }
 });

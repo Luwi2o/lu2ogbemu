@@ -10,6 +10,8 @@ export class Sonido{
      * Constructor
      */
     constructor(){
+        this.destruido = false;
+        this._oscilloscopeRaf = null;
 
         this.tamanyoFFT = 512;
         /** @type {AudioContext} */
@@ -94,7 +96,7 @@ export class Sonido{
 
             // Dibujar las formas de onda de los canales
             function draw() {
-                requestAnimationFrame(draw);
+                thisRef._oscilloscopeRaf = requestAnimationFrame(draw);
                 const canvasElement = /** @type {HTMLCanvasElement} */ (canvas);
                 canvasCtx.fillStyle = "rgb(200 200 200)";
                 canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
@@ -127,6 +129,7 @@ export class Sonido{
                 }
             }
 
+            const thisRef = this;
             draw();
         }
 
@@ -318,6 +321,60 @@ export class Sonido{
         this.lfsr = 0x7FFF;
         this.lfsrFase = 0;
         this.lfsrSalida = 0;
+    }
+
+    async desbloquear(){
+        if(!this.contextoAudio || this.contextoAudio.state !== "suspended") return;
+        await this.contextoAudio.resume();
+    }
+
+    destruir(){
+        if(this.destruido) return;
+        this.destruido = true;
+
+        if(this._oscilloscopeRaf !== null){
+            cancelAnimationFrame(this._oscilloscopeRaf);
+            this._oscilloscopeRaf = null;
+        }
+
+        const ahora = this.contextoAudio?.currentTime ?? 0;
+        for(let i = 0; i < this.ganancias.length; i++){
+            try {
+                this.ganancias[i].gain.cancelScheduledValues(ahora);
+                this.ganancias[i].gain.setValueAtTime(0, ahora);
+            } catch (err) {}
+        }
+
+        try {
+            this.maestro?.gain?.setValueAtTime(0, ahora);
+            this.final?.gain?.setValueAtTime(0, ahora);
+        } catch (err) {}
+
+        for(const oscilador of this.osciladores){
+            try {
+                if(typeof oscilador.stop === "function") oscilador.stop();
+            } catch (err) {}
+            try {
+                oscilador.disconnect();
+            } catch (err) {}
+        }
+
+        for(const ganancia of this.ganancias){
+            try {
+                ganancia.disconnect();
+            } catch (err) {}
+        }
+        for(const analizador of this.analizadores){
+            try {
+                analizador.disconnect();
+            } catch (err) {}
+        }
+        try { this.maestro?.disconnect(); } catch (err) {}
+        try { this.final?.disconnect(); } catch (err) {}
+
+        if(this.contextoAudio && this.contextoAudio.state !== "closed"){
+            this.contextoAudio.close().catch(() => {});
+        }
     }
 
     /**
