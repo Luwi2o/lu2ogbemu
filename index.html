@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -29,20 +29,19 @@
     </div>
 
     <div class="group vol" aria-label="Volumen">
-        <label for="volumen" class="mono" style="opacity:.7">Vol</label>
+        <label for="volumen" class="mono">Vol</label>
         <input type="range" id="volumen" min="0" max="100" value="50">
     </div>
 
-    <div class="group right" aria-label="Rendimiento y depuración" style="gap:.75rem">
-        <label class="mono" style="display:flex; align-items:center; gap:.5rem; opacity:.85">
+    <div class="group right status-group" aria-label="Rendimiento y depuración">
+        <label class="switch mono" for="unlock-fps">
         <input id="unlock-fps" type="checkbox">
-        FPS ilimitados
+        <span>FPS ilimitados</span>
         </label>
-    <div class="mono" id="fps" style="min-width:110px; text-align:right; opacity:.85">FPS: --</div>
+    <div class="mono fps-counter" id="fps">FPS: --</div>
 
-    <button class="btn" id="ocultar-debug"
-        onclick="document.querySelector('.debug').classList.toggle('hidden')">
-        Mostrar/Ocultar debug
+    <button class="btn debug-toggle" id="ocultar-debug" type="button" aria-expanded="false" aria-controls="panel-debug">
+        Mostrar debug
     </button>
     </div>
 
@@ -62,7 +61,7 @@
     <!-- Controles -->
     <section class="controls" aria-label="Controles">
         <div class="pad">
-        <div class="mono" style="opacity:.7">Cruceta</div>
+        <div class="mono label">Cruceta</div>
         <div class="dpad">
             <span class="spacer"></span>
             <button class="btn round" id="boton-arriba">▲</button>
@@ -77,7 +76,7 @@
         </div>
 
         <div class="ab">
-        <div class="mono" style="opacity:.7">Acción</div>
+        <div class="mono label">Acción</div>
         <div class="abgrid">
             <button class="btn round" id="boton-a">A</button>
             <button class="btn round" id="boton-b">B</button>
@@ -88,10 +87,38 @@
         <button class="btn pill" id="boton-select">Select</button>
         <button class="btn pill" id="boton-start">Start</button>
         </div>
+
+        <div class="lcd-options" aria-label="Ajustes LCD">
+        <label class="field">
+            <span class="mono">Paleta</span>
+            <select id="lcd-paleta">
+            <option value="verde">Verde DMG</option>
+            <option value="bolsillo">Pocket</option>
+            <option value="gris">Grises</option>
+            <option value="azul">Azul</option>
+            <option value="ambar">Ámbar</option>
+            </select>
+        </label>
+        <label class="field grow">
+            <span class="mono">Ghosting <b id="lcd-ghosting-valor">35%</b></span>
+            <input type="range" id="lcd-ghosting" min="0" max="90" value="35">
+        </label>
+        </div>
+
+        <section class="keymap" aria-label="Mapa de controles">
+        <h2>Controles</h2>
+        <dl>
+            <div><dt>Movimiento</dt><dd>Flechas del teclado o cruceta</dd></div>
+            <div><dt>A</dt><dd>Z o botón A</dd></div>
+            <div><dt>B</dt><dd>X o botón B</dd></div>
+            <div><dt>Select</dt><dd>Shift derecho o Select</dd></div>
+            <div><dt>Start</dt><dd>Enter o Start</dd></div>
+        </dl>
+        </section>
     </section>
 
     <!-- Debug -->
-    <aside class="debug hidden" aria-label="Depuración">
+    <aside class="debug hidden" id="panel-debug" aria-label="Depuración">
         <nav class="tabs" aria-label="Pestañas de debug">
         <button class="btn tab pill" data-tab="t-reg">Registros</button>
         <button class="btn tab pill" data-tab="t-flags">Flags</button>
@@ -127,11 +154,11 @@
             <div class="cards" style="grid-template-columns: 1fr 1fr;">
             <div class="card">
                 <div class="k">Osciloscopio</div>
-                <canvas id="oscilloscope" width="160" height="144" style="width:100%;aspect-ratio:160/144;background:#000;border-radius:8px"></canvas>
+                <canvas id="oscilloscope" width="160" height="144" class="debug-canvas"></canvas>
             </div>
             <div class="card">
                 <div class="k">Debug LCD</div>
-                <canvas id="gameboy-debug-canvas" width="160" height="144" style="width:100%;aspect-ratio:160/144;background:#000;border-radius:8px"></canvas>
+                <canvas id="gameboy-debug-canvas" width="160" height="144" class="debug-canvas"></canvas>
             </div>
             </div>
         </div>
@@ -161,8 +188,8 @@
 
         <!-- === Otros (pila/mem/logs + stepping) === -->
         <div class="panel hidden" id="t-otros">
-            <div class="box mono" style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin-bottom:.75rem">
-            <span style="opacity:.7">CPU</span>
+            <div class="box mono cpu-tools">
+            <span>CPU</span>
             <button class="btn" id="boton-continuar-sinpausa">⤳</button>
             <button class="btn" id="boton-continuar">↦</button>
             <button class="btn" id="boton-paso">↷</button>
@@ -178,26 +205,13 @@
             <div class="box mem mono" id="memoria"></div>
             </div>
 
-            <div class="box logs mono" id="gameboy-debug-logs" style="margin-top:.75rem">/</div>
+            <div class="box logs mono" id="gameboy-debug-logs">/</div>
         </div>
         </section>
     </aside>
     </main>
 </div>
 
-<!-- ====== Tabs pequeñas sin dependencias ====== -->
-<script>
-    const tabs = document.querySelectorAll('.tab');
-    const panels = document.querySelectorAll('.panel');
-    function showTab(id){
-        panels.forEach(p=>p.classList.add('hidden'));
-        const el = document.getElementById(id);
-        if(el) el.classList.remove('hidden');
-        tabs.forEach(b=> b.classList.toggle('primary', b.dataset.tab === id));
-    }
-    tabs.forEach(b=> b.addEventListener('click', ()=> showTab(b.dataset.tab)));
-    showTab('t-reg');
-</script>
 <script type="module" src="./gameboy/main.js"></script>
 <script>
     // Reserva espacio para que siempre se vean Select/Start
@@ -215,43 +229,6 @@
         window.addEventListener('load', updateHeights);
         window.addEventListener('resize', updateHeights);
         setTimeout(updateHeights, 0);
-    })();
-</script>
-    <script>
-    // UI rendimiento: toggle FPS ilimitados + mostrar FPS
-    (function(){
-        const chk = document.getElementById('unlock-fps');
-        const fpsEl = document.getElementById('fps');
-        if(!chk || !fpsEl) return;
-
-        const LS_KEY = 'gb_unlock_fps';
-        chk.checked = localStorage.getItem(LS_KEY) === '1';
-
-        window.__perfUI = { unlockFps: chk.checked, fpsEl };
-
-        function apply(){
-            const gb = window.__gb || window.gameboy || window.gb;
-            if (gb && typeof gb.setFpsElement === 'function') gb.setFpsElement(fpsEl);
-            if (gb && typeof gb.setFpsIlimitados === 'function') gb.setFpsIlimitados(chk.checked);
-
-            window.__perfUI.unlockFps = chk.checked;
-            window.__perfUI.fpsEl = fpsEl;
-
-            localStorage.setItem(LS_KEY, chk.checked ? '1' : '0');
-        }
-
-        chk.addEventListener('change', apply);
-        apply();
-
-        // Por si el emulador se instancia más tarde (al cargar ROM), reintenta un poco.
-        let tries = 0;
-        const id = setInterval(() => {
-            tries++;
-            if (window.__gb || window.gameboy || window.gb || tries > 50) {
-                apply();
-                clearInterval(id);
-            }
-        }, 100);
     })();
 </script>
 

@@ -1,4 +1,5 @@
 import { Gameboy } from './gameboy.js';
+import { PALETAS_LCD } from './io/pantalla.js';
 import { Debug } from './debug.js';
 import { setBootROM } from './bootrom.js';
 import { 
@@ -26,6 +27,14 @@ function abrirFilePicker(idInput) {
 }
 
 const DEFAULT_ROM = 'pocket.gb'; // Ruta por defecto de la ROM a cargar
+const LCD_UI_KEY = 'gb_lcd_ui';
+const PERF_UI_KEY = 'gb_unlock_fps';
+const DEBUG_VISIBLE_KEY = 'gb_debug_visible';
+
+const lcdUI = {
+    paleta: 'verde',
+    ghosting: 35
+};
 
 function destruirInstanciaActual() {
     if (gb) {
@@ -51,6 +60,7 @@ function arrancarConROM(romBytes){
 
     aplicarVolumenDesdeSlider();
     aplicarPerfUI();
+    aplicarLCDDesdeUI();
 }
 
 function aplicarVolumenDesdeSlider() {
@@ -71,6 +81,119 @@ function aplicarPerfUI() {
 
     if (typeof gb.setFpsElement === 'function') gb.setFpsElement(ui.fpsEl);
     if (typeof gb.setFpsIlimitados === 'function') gb.setFpsIlimitados(ui.unlockFps);
+}
+
+function bindTabsDebug() {
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('.panel');
+
+    const showTab = (id) => {
+        panels.forEach((panel) => panel.classList.add('hidden'));
+
+        const panel = document.getElementById(id);
+        if(panel) panel.classList.remove('hidden');
+
+        tabs.forEach((tab) => {
+            const activo = tab.dataset.tab === id;
+            tab.classList.toggle('primary', activo);
+            tab.setAttribute('aria-selected', activo ? 'true' : 'false');
+        });
+    };
+
+    tabs.forEach((tab) => {
+        tab.setAttribute('type', 'button');
+        tab.addEventListener('click', () => showTab(tab.dataset.tab));
+    });
+
+    showTab('t-reg');
+}
+
+function bindDebugToggle() {
+    const boton = $('ocultar-debug');
+    const panel = $('panel-debug');
+    if(!boton || !panel) return;
+
+    const cargarEstadoInicial = () => localStorage.getItem(DEBUG_VISIBLE_KEY) === '1';
+
+    const aplicar = (visible) => {
+        panel.classList.toggle('hidden', !visible);
+        boton.setAttribute('aria-expanded', visible ? 'true' : 'false');
+        boton.textContent = visible ? 'Ocultar debug' : 'Mostrar debug';
+        localStorage.setItem(DEBUG_VISIBLE_KEY, visible ? '1' : '0');
+        window.dispatchEvent(new Event('resize'));
+    };
+
+    boton.addEventListener('click', () => aplicar(panel.classList.contains('hidden')));
+    aplicar(cargarEstadoInicial());
+}
+
+function bindPerfUI() {
+    const chk = $('unlock-fps');
+    const fpsEl = $('fps');
+    if(!chk || !fpsEl) return;
+
+    chk.checked = localStorage.getItem(PERF_UI_KEY) === '1';
+    window.__perfUI = { unlockFps: chk.checked, fpsEl };
+
+    const aplicar = () => {
+        window.__perfUI.unlockFps = chk.checked;
+        window.__perfUI.fpsEl = fpsEl;
+        localStorage.setItem(PERF_UI_KEY, chk.checked ? '1' : '0');
+        aplicarPerfUI();
+    };
+
+    chk.addEventListener('change', aplicar);
+    aplicar();
+}
+
+function cargarLCDUI() {
+    try {
+        const guardado = JSON.parse(localStorage.getItem(LCD_UI_KEY) || 'null');
+        if(!guardado || typeof guardado !== 'object') return;
+
+        if(typeof guardado.paleta === 'string' && PALETAS_LCD[guardado.paleta]){
+            lcdUI.paleta = guardado.paleta;
+        }
+        if(typeof guardado.ghosting === 'number'){
+            lcdUI.ghosting = Math.max(0, Math.min(90, guardado.ghosting));
+        }
+    } catch (err) {
+        console.warn("[Game Boy] No se pudo cargar la configuración LCD:", err);
+    }
+}
+
+function guardarLCDUI() {
+    localStorage.setItem(LCD_UI_KEY, JSON.stringify(lcdUI));
+}
+
+function aplicarLCDDesdeUI() {
+    $('lcd-paleta') && ($('lcd-paleta').value = lcdUI.paleta);
+    $('lcd-ghosting') && ($('lcd-ghosting').value = String(lcdUI.ghosting));
+    $('lcd-ghosting-valor') && ($('lcd-ghosting-valor').textContent = `${lcdUI.ghosting}%`);
+
+    if(!gb?.pantalla) return;
+    gb.pantalla.cambiarPaletaLCD(lcdUI.paleta);
+    gb.pantalla.cambiarEfectosLCD({
+        ghosting: lcdUI.ghosting / 100
+    });
+}
+
+function bindLCDUI() {
+    cargarLCDUI();
+    aplicarLCDDesdeUI();
+
+    $('lcd-paleta')?.addEventListener('change', (e) => {
+        lcdUI.paleta = e.currentTarget.value;
+        if(!PALETAS_LCD[lcdUI.paleta]) lcdUI.paleta = 'verde';
+        guardarLCDUI();
+        aplicarLCDDesdeUI();
+    });
+
+    $('lcd-ghosting')?.addEventListener('input', (e) => {
+        lcdUI.ghosting = Number(e.currentTarget.value);
+        guardarLCDUI();
+        aplicarLCDDesdeUI();
+    });
 }
 
 function bindUI() {
@@ -146,35 +269,57 @@ function bindUI() {
 
     // Controles (1 vez) -> siempre actúan sobre `gb` actual
     mapearControles();
+    bindLCDUI();
+    bindPerfUI();
+    bindTabsDebug();
+    bindDebugToggle();
 }
 
 
 function mapearControles() {
+    const botonesPulsados = new Set();
+
     const press = (b) => {
+        if(botonesPulsados.has(b)) return;
+        botonesPulsados.add(b);
         gb?.pulsar(b);
     }
     const release = (b) => {
+        botonesPulsados.delete(b);
         gb?.soltar(b);
     }
+    const releaseAll = () => {
+        botonesPulsados.forEach((boton) => gb?.soltar(boton));
+        botonesPulsados.clear();
+    };
 
-    $("boton-a").addEventListener("mousedown", () => press(BOTON_A));
-    $("boton-a").addEventListener("mouseup", () => release(BOTON_A));
-    $("boton-b").addEventListener("mousedown", () => press(BOTON_B));
-    $("boton-b").addEventListener("mouseup", () => release(BOTON_B));
-    $("boton-select").addEventListener("mousedown", () => press(BOTON_SELECT));
-    $("boton-select").addEventListener("mouseup", () => release(BOTON_SELECT));
-    $("boton-start").addEventListener("mousedown", () => press(BOTON_START));
-    $("boton-start").addEventListener("mouseup", () => release(BOTON_START));
-    $("boton-arriba").addEventListener("mousedown", () => press(BOTON_ARRIBA));
-    $("boton-arriba").addEventListener("mouseup", () => release(BOTON_ARRIBA));
-    $("boton-abajo").addEventListener("mousedown", () => press(BOTON_ABAJO));
-    $("boton-abajo").addEventListener("mouseup", () => release(BOTON_ABAJO));
-    $("boton-izquierda").addEventListener("mousedown", () => press(BOTON_IZQUIERDA));
-    $("boton-izquierda").addEventListener("mouseup", () => release(BOTON_IZQUIERDA));
-    $("boton-derecha").addEventListener("mousedown", () => press(BOTON_DERECHA));
-    $("boton-derecha").addEventListener("mouseup", () => release(BOTON_DERECHA));
+    const bindBotonPantalla = (id, boton) => {
+        const el = $(id);
+        if(!el) return;
+
+        el.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            el.setPointerCapture?.(e.pointerId);
+            press(boton);
+        });
+        el.addEventListener("pointerup", () => release(boton));
+        el.addEventListener("pointercancel", () => release(boton));
+        el.addEventListener("lostpointercapture", () => release(boton));
+        el.addEventListener("blur", () => release(boton));
+    };
+
+    bindBotonPantalla("boton-a", BOTON_A);
+    bindBotonPantalla("boton-b", BOTON_B);
+    bindBotonPantalla("boton-select", BOTON_SELECT);
+    bindBotonPantalla("boton-start", BOTON_START);
+    bindBotonPantalla("boton-arriba", BOTON_ARRIBA);
+    bindBotonPantalla("boton-abajo", BOTON_ABAJO);
+    bindBotonPantalla("boton-izquierda", BOTON_IZQUIERDA);
+    bindBotonPantalla("boton-derecha", BOTON_DERECHA);
 
     window.addEventListener("keydown", (e) => {
+        if(e.repeat) return;
+
         switch(e.code) {
             case "KeyZ": press(BOTON_A); break;
             case "KeyX": press(BOTON_B); break;
@@ -199,6 +344,8 @@ function mapearControles() {
             case "ArrowRight": release(BOTON_DERECHA); break;
         }
     });
+
+    window.addEventListener("blur", releaseAll);
 }
 
 window.addEventListener("load", async () => {

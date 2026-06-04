@@ -10,6 +10,41 @@ import {
     VBLANK_INT
 } from '../constantes.js';
 
+// Paletas configurables
+/** @type {Record<string, Array<[number, number, number, number]>>} */
+export const PALETAS_LCD = {
+    verde: [
+        [226, 246, 171, 255],
+        [157, 191, 91, 255],
+        [82, 118, 54, 255],
+        [25, 46, 32, 255]
+    ],
+    bolsillo: [
+        [242, 239, 222, 255],
+        [177, 174, 159, 255],
+        [96, 96, 90, 255],
+        [20, 22, 24, 255]
+    ],
+    gris: [
+        [255, 255, 255, 255],
+        [150, 150, 150, 255],
+        [90, 90, 90, 255],
+        [0, 0, 0, 255]
+    ],
+    azul: [
+        [230, 248, 255, 255],
+        [124, 195, 213, 255],
+        [52, 103, 139, 255],
+        [15, 31, 56, 255]
+    ],
+    ambar: [
+        [255, 242, 177, 255],
+        [226, 166, 73, 255],
+        [139, 83, 37, 255],
+        [45, 30, 24, 255]
+    ]
+};
+
 /**
  * Emula la pantalla de la Gameboy
  */
@@ -17,9 +52,9 @@ export class Pantalla{
 
     /**
      * Constructor de Pantalla
-     * @param {RegistrosLCD} regLCD 
-     * @param {Interrupciones} ints
-     * @param {Object} estado
+     * @param {RegistrosLCD} regLCD Registros de PPU
+     * @param {Interrupciones} ints Interrupciones
+     * @param {Object} estado Estado, no implementado aún
      */
     constructor(regLCD, ints, estado){
 
@@ -54,10 +89,20 @@ export class Pantalla{
         this.lcdEnableAnterior = this.regLCD.LCDEnable;
         this.debugColorearCapas = false; // Poner a false para volver al render normal
         this._debugColorCapas32 = null;
+        this.paletaLCD = "verde";
+        this.valorColor = PALETAS_LCD.verde;
+        this.valorColor32 = null;
+        this.ghostingLCD = 0.35;
 
         this.canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("gameboy-canvas"));
         this.contexto = this.canvas.getContext("2d", { alpha: false });
-        this.lcd = this.contexto ? this.contexto.createImageData(160, 144) : null;
+        this.lcd = this.contexto 
+            ? this.contexto.createImageData(160, 144) : null; // Datos de los pixeles del lcd
+        this.lcdSalida = this.contexto ? 
+            this.contexto.createImageData(160, 144) : null; // Salida real del canvas
+        this.lcdFantasma = this.lcd ? 
+            new Uint8ClampedArray(this.lcd.data.length) : null; // Datos del efecto de ghosting
+        this.lcdFantasmaInicializado = false;
 
         this._lcd32 = this.lcd ? new Uint32Array(this.lcd.data.buffer) : null;
         this._bgIdx = new Uint8Array(GB_PANTALLA_ANCHO);
@@ -211,6 +256,45 @@ export class Pantalla{
     }
 
     /**
+     * @returns {Uint32Array}
+     */
+    obtenerColores32(){
+        if(!this.valorColor32){
+            const colores32 = new Uint32Array(this.valorColor.length);
+            for(let i=0; i<this.valorColor.length; i++){
+                colores32[i] = this.empaquetarColor32(this.valorColor[i]);
+            }
+            this.valorColor32 = colores32;
+        }
+
+        return this.valorColor32;
+    }
+
+    /**
+     * Cambia la paleta visual usada para convertir los 4 tonos DMG a RGBA.
+     * Por defecto es "verde".
+     * @param {string} nombre Nombre de la paleta
+     */ 
+    cambiarPaletaLCD(nombre){
+        const paleta = PALETAS_LCD[nombre] || PALETAS_LCD.verde;
+        this.paletaLCD = PALETAS_LCD[nombre] ? nombre : "verde";
+        this.valorColor = paleta;
+        this.valorColor32 = null;
+        this._debugColorCapas32 = null;
+        this.lcdFantasmaInicializado = false;
+    }
+
+    /**
+     * Ajusta los efectos visuales de la pantalla LCD.
+     * @param {{ghosting?: number}} opciones
+     */
+    cambiarEfectosLCD(opciones){
+        if(typeof opciones.ghosting === "number"){
+            this.ghostingLCD = Math.max(0, Math.min(0.9, opciones.ghosting));
+        }
+    }
+
+    /**
      * Carga el estado de la pantalla
      * @param {Object} estado 
      */
@@ -254,26 +338,8 @@ export class Pantalla{
         }
         const framebuffer32 = this._lcd32;
 
-        // Precalcular tabla de colores empaquetados (una vez)
-        // Las paletas del DMG devuelven índices de color; esta tabla convierte
-        // esos índices directamente al formato que espera el framebuffer.
-        if(!reg.valorColor32){
-            const coloresRGBA = reg.valorColor; // [[r,g,b,a], ...]
-            const colores32 = new Uint32Array(coloresRGBA.length);
-            const little = this._littleEndian ?? (new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44);
-
-            for(let i=0;i<coloresRGBA.length;i++){
-                const c = coloresRGBA[i];
-                // En little-endian, escribir 0xAABBGGRR produce bytes [RR,GG,BB,AA]
-                colores32[i] = little
-                    ? (((c[3] << 24) | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0)
-                    : (((c[0] << 24) | (c[1] << 16) | (c[2] << 8) | c[3]) >>> 0);
-            }
-            // @ts-expect-error
-            reg.valorColor32 = colores32;
-        }
-        const colores32 = reg.valorColor32;
-        const coloresDebugCapas = this.debugColorearCapas ? this.obtenerColoresDebugCapas32(reg.valorColor) : null;
+        const colores32 = this.obtenerColores32();
+        const coloresDebugCapas = this.debugColorearCapas ? this.obtenerColoresDebugCapas32(this.valorColor) : null;
 
         // La máscara permite extraer el bit de color correspondiente dentro de
         // los dos bytes que forman una fila de tile. indicesBGLinea se guarda
@@ -538,9 +604,38 @@ export class Pantalla{
      * @returns 
      */
     dibujarPantalla(){
-        // Volcar el ImageData pequeño al buffer trasero
-        if (this.backCtx && this.lcd) {
-            this.backCtx.putImageData(this.lcd, 0, 0);
+        let imagenLCD = this.lcd;
+
+        if(this.lcd && this.lcdSalida && this.lcdFantasma && this.ghostingLCD > 0){
+            const entrada = this.lcd.data;
+            const salida = this.lcdSalida.data;
+            const fantasma = this.lcdFantasma;
+            const pesoAnterior = this.ghostingLCD;
+            const pesoActual = 1 - pesoAnterior;
+
+            if(!this.lcdFantasmaInicializado){
+                fantasma.set(entrada);
+                this.lcdFantasmaInicializado = true;
+            }
+
+            // Para simular ghosting se le suman a los valores actuales de encendido de la lcd
+            //  los valores anteriores ponderados por un valor ajustable
+            for(let i=0; i<entrada.length; i+=4){
+                salida[i] = (entrada[i] * pesoActual) + (fantasma[i] * pesoAnterior);
+                salida[i + 1] = (entrada[i + 1] * pesoActual) + (fantasma[i + 1] * pesoAnterior);
+                salida[i + 2] = (entrada[i + 2] * pesoActual) + (fantasma[i + 2] * pesoAnterior);
+                salida[i + 3] = 255;
+            }
+            fantasma.set(salida);
+            imagenLCD = this.lcdSalida;
+        } else if(this.lcd && this.lcdFantasma) {
+            this.lcdFantasma.set(this.lcd.data);
+            this.lcdFantasmaInicializado = true;
+        }
+
+        // Volcar el ImageData al buffer trasero
+        if (this.backCtx && imagenLCD) {
+            this.backCtx.putImageData(imagenLCD, 0, 0);
         }
 
         // Escalar con la GPU al canvas visible
