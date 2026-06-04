@@ -107,7 +107,13 @@ body{
 }
 
 .btn:hover{ background:#f5f0dc; border-color:#635b4d; }
-.btn:active{ transform:translateY(1px); box-shadow:var(--inner-shadow); }
+.btn:active,
+.btn.is-pressed{
+  transform:translateY(2px);
+  background:#d1c8ae;
+  border-color:#5b5447;
+  box-shadow:inset 0 2px 4px rgba(72,65,45,.28);
+}
 .btn:focus-visible,
 select:focus-visible,
 input[type="range"]:focus-visible,
@@ -289,6 +295,10 @@ canvas#gameboy-canvas{
 }
 
 .abgrid .btn{ transform:rotate(18deg); }
+.abgrid .btn:active,
+.abgrid .btn.is-pressed{
+  transform:rotate(18deg) translateY(2px);
+}
 
 .btn.round{
   width:var(--btn);
@@ -305,6 +315,12 @@ canvas#gameboy-canvas{
 }
 
 .ab .btn.round:hover{ background:#8f2864; }
+.ab .btn.round:active,
+.ab .btn.round.is-pressed{
+  background:var(--accent-2-pressed);
+  border-color:#43112c;
+  box-shadow:inset 0 2px 5px rgba(28,5,18,.34);
+}
 .btn.pill{ border-radius:999px; padding:.56rem .9rem; min-width:76px; }
 
 .field{

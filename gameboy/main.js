@@ -278,18 +278,44 @@ function bindUI() {
 
 function mapearControles() {
     const botonesPulsados = new Set();
+    const controles = [
+        { id: "boton-a", boton: BOTON_A, tecla: "KeyK" },
+        { id: "boton-b", boton: BOTON_B, tecla: "KeyL" },
+        { id: "boton-select", boton: BOTON_SELECT, tecla: "ShiftRight" },
+        { id: "boton-start", boton: BOTON_START, tecla: "Enter" },
+        { id: "boton-arriba", boton: BOTON_ARRIBA, tecla: "KeyW" },
+        { id: "boton-abajo", boton: BOTON_ABAJO, tecla: "KeyS" },
+        { id: "boton-izquierda", boton: BOTON_IZQUIERDA, tecla: "KeyA" },
+        { id: "boton-derecha", boton: BOTON_DERECHA, tecla: "KeyD" }
+    ];
+    const controlPorTecla = new Map(controles.map((control) => [control.tecla, control]));
+    const controlPorBoton = new Map(controles.map((control) => [control.boton, control]));
+
+    const setBotonActivo = (boton, activo) => {
+        const control = controlPorBoton.get(boton);
+        if(!control) return;
+
+        const el = $(control.id);
+        el?.classList.toggle("is-pressed", activo);
+        el?.setAttribute("aria-pressed", activo ? "true" : "false");
+    };
 
     const press = (b) => {
         if(botonesPulsados.has(b)) return;
         botonesPulsados.add(b);
+        setBotonActivo(b, true);
         gb?.pulsar(b);
     }
     const release = (b) => {
         botonesPulsados.delete(b);
+        setBotonActivo(b, false);
         gb?.soltar(b);
     }
     const releaseAll = () => {
-        botonesPulsados.forEach((boton) => gb?.soltar(boton));
+        botonesPulsados.forEach((boton) => {
+            setBotonActivo(boton, false);
+            gb?.soltar(boton);
+        });
         botonesPulsados.clear();
     };
 
@@ -308,41 +334,28 @@ function mapearControles() {
         el.addEventListener("blur", () => release(boton));
     };
 
-    bindBotonPantalla("boton-a", BOTON_A);
-    bindBotonPantalla("boton-b", BOTON_B);
-    bindBotonPantalla("boton-select", BOTON_SELECT);
-    bindBotonPantalla("boton-start", BOTON_START);
-    bindBotonPantalla("boton-arriba", BOTON_ARRIBA);
-    bindBotonPantalla("boton-abajo", BOTON_ABAJO);
-    bindBotonPantalla("boton-izquierda", BOTON_IZQUIERDA);
-    bindBotonPantalla("boton-derecha", BOTON_DERECHA);
+    controles.forEach((control) => {
+        const el = $(control.id);
+        el?.setAttribute("aria-pressed", "false");
+        bindBotonPantalla(control.id, control.boton);
+    });
 
     window.addEventListener("keydown", (e) => {
         if(e.repeat) return;
 
-        switch(e.code) {
-            case "KeyZ": press(BOTON_A); break;
-            case "KeyX": press(BOTON_B); break;
-            case "ShiftRight": press(BOTON_SELECT); break;
-            case "Enter": press(BOTON_START); break;
-            case "ArrowUp": press(BOTON_ARRIBA); break;
-            case "ArrowDown": press(BOTON_ABAJO); break;
-            case "ArrowLeft": press(BOTON_IZQUIERDA); break;
-            case "ArrowRight": press(BOTON_DERECHA); break;
-        }
+        const control = controlPorTecla.get(e.code);
+        if(!control) return;
+
+        e.preventDefault();
+        press(control.boton);
     });
     
     window.addEventListener("keyup", (e) => {
-        switch(e.code) {
-            case "KeyZ": release(BOTON_A); break;
-            case "KeyX": release(BOTON_B); break;
-            case "ShiftRight": release(BOTON_SELECT); break;
-            case "Enter": release(BOTON_START); break;
-            case "ArrowUp": release(BOTON_ARRIBA); break;
-            case "ArrowDown": release(BOTON_ABAJO); break;
-            case "ArrowLeft": release(BOTON_IZQUIERDA); break;
-            case "ArrowRight": release(BOTON_DERECHA); break;
-        }
+        const control = controlPorTecla.get(e.code);
+        if(!control) return;
+
+        e.preventDefault();
+        release(control.boton);
     });
 
     window.addEventListener("blur", releaseAll);
