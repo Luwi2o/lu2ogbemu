@@ -45,6 +45,9 @@ export class Gameboy{
 
         this.tiempoAhora = performance.now();
         this.tiempoAntes = performance.now();
+        this.frameObjetivoMs = 1000 / 59.727500569606;
+        this.acumuladorFrameMs = 0;
+        this.maxFramesPorRAF = 3;
         // --- Rendimiento (FPS) ---
         /** @type {boolean} */
         this.fpsIlimitados = false;
@@ -125,21 +128,39 @@ export class Gameboy{
     /**
      * Bucle de emulación.
      */
-    emular(){
+    emular(timestamp = performance.now()){
         const gb = this;
 
         if(!this.ejecutando) return;
 
-        this.raf = window.requestAnimationFrame(function(){ gb.emular() });
+        this.raf = window.requestAnimationFrame(function(t){ gb.emular(t) });
 
-        // Modo normal: cap a ~60 FPS
+        // Modo normal: cap al refresco real de Game Boy (~59.73 FPS).
         if(!this.fpsIlimitados){
-            this.tiempoAhora = performance.now();
-            const diferencia = this.tiempoAhora - this.tiempoAntes;
+            this.tiempoAhora = timestamp;
+            let diferencia = this.tiempoAhora - this.tiempoAntes;
+            this.tiempoAntes = this.tiempoAhora;
 
-            if(diferencia > 1000/60){
+            if(diferencia > 250 || diferencia < 0){
+                diferencia = this.frameObjetivoMs;
+                this.acumuladorFrameMs = 0;
+            }
+
+            this.acumuladorFrameMs += diferencia;
+
+            let framesEsteRAF = 0;
+            while(
+                this.acumuladorFrameMs >= this.frameObjetivoMs &&
+                framesEsteRAF < this.maxFramesPorRAF &&
+                !this.cPUDebug.pausado
+            ){
                 this._emularUnFrame();
-                this.tiempoAntes = this.tiempoAhora;
+                this.acumuladorFrameMs -= this.frameObjetivoMs;
+                framesEsteRAF++;
+            }
+
+            if(framesEsteRAF === this.maxFramesPorRAF && this.acumuladorFrameMs >= this.frameObjetivoMs){
+                this.acumuladorFrameMs = this.frameObjetivoMs - 0.001;
             }
 
             this._tickFps(this.tiempoAhora);
@@ -193,6 +214,8 @@ export class Gameboy{
      * Se comienza el bucle de emulación.
      */
     iniciar(){
+        this.tiempoAntes = performance.now();
+        this.acumuladorFrameMs = this.frameObjetivoMs;
         this.emular();
     }
 
@@ -222,6 +245,7 @@ export class Gameboy{
         // evita “saltos” al alternar modo
         const now = performance.now();
         this.tiempoAntes = now;
+        this.acumuladorFrameMs = this.fpsIlimitados ? 0 : this.frameObjetivoMs;
         this._fpsFrames = 0;
         this._fpsUltimoT = now;
         this.fps = 0;
