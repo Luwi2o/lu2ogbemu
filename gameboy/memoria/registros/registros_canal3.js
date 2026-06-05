@@ -7,7 +7,7 @@ export class RegistrosCanal3{
 
 
     /**
-     * 
+     * Constructor de registros de canal 3
      * @param {number} tipoConsola 
      * @param {Sonido} sonido 
      */
@@ -89,13 +89,13 @@ export class RegistrosCanal3{
                 this.sonido.actualizarGanancia(2, 0);
                 break;
             case 1: 
-                this.sonido.actualizarGanancia(2, 1);
-                break;
-            case 2: 
                 this.sonido.actualizarGanancia(2, 1/2);
                 break;
+            case 2: 
+                this.sonido.actualizarGanancia(2, 0.5/2);
+                break;
             case 3: 
-                this.sonido.actualizarGanancia(2, 1/4);
+                this.sonido.actualizarGanancia(2, 0.25/2);
                 break;
         }
     }
