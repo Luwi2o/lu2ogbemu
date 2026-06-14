@@ -107,6 +107,7 @@ export class RegistrosLCD {
         this.interrupcionEstadoEnModo0 = /**@type {boolean}*/ false;
         this.LYCLYFlag = /**@type {boolean}*/ false;
         this.ModeFlag = 0;
+        this.filaOAM = -1;
 
         if(estado){ 
             this.cargarEstado(estado)

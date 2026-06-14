@@ -132,6 +132,7 @@ export class CPU{
             var dir = this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]);
             this.registros.R[regd] = this.memoria.leer8Bits(dir);
             if (offset !== undefined && offset !== 0) {
+                this.memoria.corromperOAMPorIDU(dir);
                 dir += offset
                 this.registros.R[regmemh] = this.msb(dir)
                 this.registros.R[regmeml] = this.lsb(dir)
@@ -183,6 +184,7 @@ export class CPU{
             var dir = this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]);
             this.memoria.escribir8Bits(dir, this.registros.R[regs]);
             if (offset !== undefined && offset !== 0) {
+                this.memoria.corromperOAMPorIDU(dir);
                 dir = (dir + offset) & 0xFFFF;
                 this.registros.R[regmemh] = this.msb(dir);
                 this.registros.R[regmeml] = this.lsb(dir);
@@ -938,6 +940,7 @@ export class CPU{
          */
         this.inc_rr_16b = (reghd, regld) => {
             var regd = this.registros.leer16Bits(reghd, regld)
+            this.memoria.corromperOAMPorIDU(regd);
             var res = (regd + 1) & 0xFFFF;
             this.registros.escribir16Bits(reghd, regld, res);
             this.cPUDebug.instruccionStr = ("inc_rr_16b " + this.nombreR(reghd) + this.nombreR(regld));
@@ -950,6 +953,7 @@ export class CPU{
          * @returns 
          */
         this.inc_sp_16b = () => {
+            this.memoria.corromperOAMPorIDU(this.registros.SP);
             this.registros.SP = (this.registros.SP + 1) & 0xFFFF
             this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("inc_sp_16b")
@@ -964,6 +968,7 @@ export class CPU{
          */
         this.dec_rr_16b = (reghd, regld) => {
             var regd = this.registros.leer16Bits(reghd, regld)
+            this.memoria.corromperOAMPorIDU(regd);
             var res = regd - 1;
             this.registros.escribir16Bits(reghd, regld, res);
             this.ciclos = 8;
@@ -976,6 +981,7 @@ export class CPU{
          * @returns 
          */
         this.dec_sp_16b = () => {
+            this.memoria.corromperOAMPorIDU(this.registros.SP);
             this.registros.SP = (this.registros.SP - 1) & 0xFFFF;
             this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("dec_sp_16b");
@@ -2533,12 +2539,14 @@ export class CPU{
     }
 
     apilar8Bits(dato){
+        this.memoria.corromperOAMPorIDU(this.registros.SP);
         this.registros.SP = (this.registros.SP - 1) & 0xFFFF;
         this.memoria.escribir8Bits(this.registros.SP, dato);
     }
 
     desapilar8Bits(){
         var dato = this.memoria.leer8Bits(this.registros.SP);
+        this.memoria.corromperOAMPorIDU(this.registros.SP);
         this.registros.SP = (this.registros.SP + 1) & 0xFFFF;
         return dato;
     }

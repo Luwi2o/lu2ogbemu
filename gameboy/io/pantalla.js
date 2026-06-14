@@ -662,6 +662,7 @@ export class Pantalla{
             this.ventanaVisible = false;
             this.regLCD.lineaY = 0;
             this.regLCD.ModeFlag = 0;
+            this.regLCD.filaOAM = -1;
             this.modo = 0;
             this.regLCD.condicionWY = false;
             this.actualizarCoincidenciaLYC();
@@ -681,6 +682,7 @@ export class Pantalla{
             this.ventanaVisible = false;
             this.regLCD.lineaY = 0;
             this.regLCD.ModeFlag = 2;
+            this.regLCD.filaOAM = Math.floor(this.dots / 4);
             this.modo = 2;
             this.regLCD.condicionWY = false;
             this.actualizarCondicionWYInicioModo2();
@@ -692,6 +694,9 @@ export class Pantalla{
         this.dots += ciclos;
         this.terminada = false;
         this.actualizarCoincidenciaLYC();
+        if(this.modo === 2){
+            this.regLCD.filaOAM = Math.min(19, Math.floor(this.dots / 4));
+        }
         switch(this.modo){
             // Escaneo OAM
             case 2:
@@ -703,6 +708,7 @@ export class Pantalla{
                 if(this.dots >= 80){
                     this.dots -= 80;
                     this.regLCD.ModeFlag = 3;
+                    this.regLCD.filaOAM = -1;
                     this.modo = 3; // Modo de dibujo de pixeles
                     this.capturarScrollLinea();
                     this.ventanaVisible = this.esVentanaVisibleEnLinea();
@@ -751,6 +757,7 @@ export class Pantalla{
                     // Se pasa al modo de busqueda de OAM
                     if(this.linea < 144){
                         this.regLCD.ModeFlag = 2;
+                        this.regLCD.filaOAM = Math.min(19, Math.floor(this.dots / 4));
                         this.modo = 2;
                         this.actualizarCondicionWYInicioModo2();
                         // TODO this.memoria.bloqueoOAM = true;
@@ -764,6 +771,7 @@ export class Pantalla{
                     } else {
                         // Pasa a VBlank
                         this.regLCD.ModeFlag = 1;
+                        this.regLCD.filaOAM = -1;
                         this.modo = 1;
                         // Si está activada la interrupcion STAT en modo 1
                         if(this.regLCD.interrupcionEstadoEnModo1){
@@ -793,6 +801,7 @@ export class Pantalla{
 
                         this.terminada = true;
                         this.regLCD.ModeFlag = 2;
+                        this.regLCD.filaOAM = Math.min(19, Math.floor(this.dots / 4));
                         this.modo = 2;
 
                         this.linea = 0; // Contador de linea se reinicia

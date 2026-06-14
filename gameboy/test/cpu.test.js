@@ -381,6 +381,120 @@ test('CPU cubre límites de INC y DEC en registros y memoria conservando carry',
     assert.equal(cpu.registros.leer16Bits(B, C), 0xffff);
 });
 
+test('INC DE en rango OAM durante Mode 2 reproduce la corrupción de Blargg', () => {
+    const { cpu, memoria, regLCD } = crearCPU();
+
+    for(let offset = 0; offset < 0xa0; offset++){
+        memoria.escribir8Bits(0xfe00 + offset, (offset * 13 + 7) & 0xff);
+    }
+
+    const fila = 6;
+    const actual = fila * 8;
+    const anterior = actual - 8;
+    const leerPalabra = (offset) =>
+        memoria.leerOAMDirecto(offset) | (memoria.leerOAMDirecto(offset + 1) << 8);
+    const a = leerPalabra(actual);
+    const b = leerPalabra(anterior);
+    const c = leerPalabra(anterior + 4);
+    const esperada = ((a ^ c) & (b ^ c)) ^ c;
+    const copiaAnterior = Array.from(
+        { length: 6 },
+        (_, indice) => memoria.leerOAMDirecto(anterior + 2 + indice)
+    );
+
+    regLCD.LCDEnable = true;
+    regLCD.ModeFlag = 2;
+    regLCD.filaOAM = fila;
+    cpu.registros.escribir16Bits(D, E, 0xfe00);
+    cpu.inc_rr_16b(D, E);
+
+    assert.equal(cpu.registros.leer16Bits(D, E), 0xfe01);
+    assert.equal(leerPalabra(actual), esperada);
+    assert.deepEqual(
+        Array.from({ length: 6 }, (_, indice) => memoria.leerOAMDirecto(actual + 2 + indice)),
+        copiaAnterior
+    );
+
+    const primeraFila = Array.from(
+        { length: 8 },
+        (_, indice) => memoria.leerOAMDirecto(indice)
+    );
+    regLCD.filaOAM = 0;
+    cpu.registros.escribir16Bits(D, E, 0xfe00);
+    cpu.inc_rr_16b(D, E);
+    assert.deepEqual(
+        Array.from({ length: 8 }, (_, indice) => memoria.leerOAMDirecto(indice)),
+        primeraFila
+    );
+});
+
+test('Las operaciones IDU de Blargg 2-causes corrompen OAM durante Mode 2', () => {
+    const casos = [
+        ['INC DE', (cpu) => {
+            cpu.registros.escribir16Bits(D, E, 0xfe00);
+            cpu.inc_rr_16b(D, E);
+        }],
+        ['DEC DE', (cpu) => {
+            cpu.registros.escribir16Bits(D, E, 0xfe00);
+            cpu.dec_rr_16b(D, E);
+        }],
+        ['INC DE desde FEFF', (cpu) => {
+            cpu.registros.escribir16Bits(D, E, 0xfeff);
+            cpu.inc_rr_16b(D, E);
+        }],
+        ['INC BC', (cpu) => {
+            cpu.registros.escribir16Bits(B, C, 0xfe00);
+            cpu.inc_rr_16b(B, C);
+        }],
+        ['INC HL', (cpu) => {
+            cpu.registros.escribir16Bits(H, L, 0xfe00);
+            cpu.inc_rr_16b(H, L);
+        }],
+        ['INC SP', (cpu) => {
+            cpu.registros.SP = 0xfe00;
+            cpu.inc_sp_16b();
+        }],
+        ['POP BC', (cpu) => {
+            cpu.registros.SP = 0xfdff;
+            cpu.pop_rr_16b(B, C);
+        }],
+        ['PUSH BC', (cpu) => {
+            cpu.registros.SP = 0xfe00;
+            cpu.push_rr_16b(B, C);
+        }],
+        ['LD A,(HL+)', (cpu) => {
+            cpu.registros.escribir16Bits(H, L, 0xfe00);
+            cpu.ld_r_mrr_8b(A, H, L, 1);
+        }],
+        ['LD A,(HL-)', (cpu) => {
+            cpu.registros.escribir16Bits(H, L, 0xfe00);
+            cpu.ld_r_mrr_8b(A, H, L, -1);
+        }],
+    ];
+
+    for(const [nombre, ejecutar] of casos){
+        const { cpu, memoria, regLCD } = crearCPU();
+        for(let offset = 0; offset < 0xa0; offset++){
+            memoria.escribir8Bits(0xfe00 + offset, (offset * 17 + 3) & 0xff);
+        }
+        const antes = Array.from(
+            { length: 0xa0 },
+            (_, offset) => memoria.leerOAMDirecto(offset)
+        );
+
+        regLCD.LCDEnable = true;
+        regLCD.ModeFlag = 2;
+        regLCD.filaOAM = 7;
+        ejecutar(cpu);
+
+        const despues = Array.from(
+            { length: 0xa0 },
+            (_, offset) => memoria.leerOAMDirecto(offset)
+        );
+        assert.notDeepEqual(despues, antes, nombre);
+    }
+});
+
 test('CPU rota el acumulador y controla carry con las flags correctas', () => {
     const casos = [
         ['rlca_8b', 0x81, 0, 0x03, 1],

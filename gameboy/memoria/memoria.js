@@ -397,6 +397,70 @@ export class Memoria{
     
     }
 
+    leerOAMDirecto(offset){
+        const indiceObj = Math.floor(offset / 4);
+        switch(offset & 3){
+            case 0: return this.regLCD.objetos[indiceObj].y;
+            case 1: return this.regLCD.objetos[indiceObj].x;
+            case 2: return this.regLCD.objetos[indiceObj].tileIndice;
+            case 3: return this.regLCD.getObjAtributos(indiceObj);
+        }
+    }
+
+    escribirOAMDirecto(offset, dato){
+        const indiceObj = Math.floor(offset / 4);
+        switch(offset & 3){
+            case 0: this.regLCD.setObjYPos(indiceObj, dato); break;
+            case 1: this.regLCD.setObjXPos(indiceObj, dato); break;
+            case 2: this.regLCD.setObjTileIndice(indiceObj, dato); break;
+            case 3: this.regLCD.setObjAtributos(indiceObj, dato); break;
+        }
+    }
+
+    leerPalabraOAM(offset){
+        return this.leerOAMDirecto(offset) | (this.leerOAMDirecto(offset + 1) << 8);
+    }
+
+    escribirPalabraOAM(offset, dato){
+        this.escribirOAMDirecto(offset, dato & 0xff);
+        this.escribirOAMDirecto(offset + 1, dato >> 8);
+    }
+
+    /**
+     * Aplica la corrupción del bus OAM de DMG durante Mode 2.
+     * @param {'read'|'write'} tipo
+     */
+    corromperOAM(tipo = 'write'){
+        const fila = this.regLCD.filaOAM;
+        if(!this.regLCD.LCDEnable || this.regLCD.ModeFlag !== 2 || fila <= 0 || fila >= 20){
+            return;
+        }
+
+        const actual = fila * 8;
+        const anterior = actual - 8;
+        const a = this.leerPalabraOAM(actual);
+        const b = this.leerPalabraOAM(anterior);
+        const c = this.leerPalabraOAM(anterior + 4);
+        const primera = tipo === 'read'
+            ? b | (a & c)
+            : ((a ^ c) & (b ^ c)) ^ c;
+
+        this.escribirPalabraOAM(actual, primera);
+        for(let offset = 2; offset < 8; offset++){
+            this.escribirOAMDirecto(actual + offset, this.leerOAMDirecto(anterior + offset));
+        }
+    }
+
+    /**
+     * El IDU de 16 bits expone el valor previo en el bus aunque no haya acceso.
+     * @param {number} direccion
+     */
+    corromperOAMPorIDU(direccion){
+        if(direccion >= 0xfe00 && direccion <= 0xfeff){
+            this.corromperOAM('write');
+        }
+    }
+
     normalizarBancoROM(numeroBanco){
         if(this.cantidadBancosROM <= 0) return 0;
         return numeroBanco % this.cantidadBancosROM;
@@ -542,6 +606,10 @@ export class Memoria{
         }
         // FE00-FE9F - Sprite attribute table (OAM)
         else if(indice >= 0xFE00  && indice <= 0xFE9F){
+            if(this.regLCD.LCDEnable && this.regLCD.ModeFlag === 2){
+                this.corromperOAM('read');
+                return 0xff;
+            }
             var offset = indice - 0xFE00
             var indiceObj = Math.floor(offset / 4)
             switch(offset % 4){
@@ -563,7 +631,12 @@ export class Memoria{
             }
         }
         // FEA0-FEFF Not Usable
-        // No implementada
+        else if(indice >= 0xFEA0 && indice <= 0xFEFF){
+            if(this.regLCD.LCDEnable && this.regLCD.ModeFlag === 2){
+                this.corromperOAM('read');
+            }
+            lectura = 0xff;
+        }
         // FF00-FF7F - I/O Registers
         else if(indice >= 0xFF00  && indice <= 0xFF7F){
             // FF30-FF3F RAM de ondas
@@ -886,6 +959,10 @@ export class Memoria{
         }
         // FE00-FE9F - Sprite attribute table (OAM)
         else if(indice >= 0xFE00  && indice <= 0xFE9F){
+            if(this.regLCD.LCDEnable && this.regLCD.ModeFlag === 2){
+                this.corromperOAM('write');
+                return;
+            }
             var offset = indice - 0xFE00
             var indiceObj = Math.floor(offset / 4)
             switch(offset % 4){
@@ -907,7 +984,11 @@ export class Memoria{
             }
         }
         // FEA0-FEFF Not Usable
-        // No implementada
+        else if(indice >= 0xFEA0 && indice <= 0xFEFF){
+            if(this.regLCD.LCDEnable && this.regLCD.ModeFlag === 2){
+                this.corromperOAM('write');
+            }
+        }
         // FF00-FF7F - I/O Registers
         else if(indice >= 0xFF00  && indice <= 0xFF7F){
             // FF30-FF3F RAM de ondas
