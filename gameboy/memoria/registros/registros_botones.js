@@ -10,11 +10,9 @@ export class RegistrosBotones{
 
     /**
      * Constructor
-     * @param {number} tipoConsola 
+     * @param {number} tipoConsola
      */
     constructor(tipoConsola){
-        console.debug("---------- BOTONES ----------");
-        
         // false si el boton esta siendo pulsado, true si no
         this.seleccion = SELECCIONADO_AMBOS;
         this.esBoton = /** @type {boolean} */ false;
@@ -23,7 +21,6 @@ export class RegistrosBotones{
         this.direccionales = [false, false, false, false]; // Registros Botones
 
         if(tipoConsola == BGB_DMG0){
-            console.debug("BOTONES: Tipo de Consola BGB_DMG0");
             this.seleccion = SELECCIONADO_AMBOS;
             this.esBoton = true;
             this.esDireccional = true;

@@ -50,10 +50,8 @@ export class RegistrosAudio{
     escribirAudioControlMaestro(dato){
         this.audioEncendido = (dato & 0x80) == 0x80; // Bit 7 audio encendido
         if(this.audioEncendido){
-            console.log("activar maestro")
             this.sonido.activarMaestro();
         } else {
-            console.log("desactivar maestro")
             this.sonido.desactivarMaestro();
         }
         // Bit 6, 5, 4 no se usan
@@ -67,7 +65,7 @@ export class RegistrosAudio{
     leerAudioControlMaestro(){
         return(
             (this.audioEncendido ? 1 : 0) << 7 | // Bit 7 audio encendido
-            0x7 |
+            0x70 | // Bits 6-4 no se usan y se leen a 1
             (this.regsCnl4.activado ? 1:0) << 3 |
             (this.regsCnl3.activado ? 1:0) << 2 |
             (this.regsCnl2.activado ? 1:0) << 1 |

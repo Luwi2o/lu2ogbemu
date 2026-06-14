@@ -63,7 +63,7 @@ export class RegistrosCanal3{
     }
 
     leerActivadoDAC(){
-        return ((this.activadoDAC ? 1 : 0 ) << 7) & 0x7f
+        return (this.activadoDAC ? 1 : 0) << 7
     }
 
     /**

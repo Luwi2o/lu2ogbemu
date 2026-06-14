@@ -3,3 +3,17 @@ Emulador de Game Boy (DMG-0) pensado para jugar en el navegador. Solo necesitas 
 Incluye un panel de depuracion opcional con registros, memoria, pila y estado de video/IO, mas un contador de FPS y un modo de FPS ilimitados para pruebas de rendimiento.
 
 Controles: teclado (flechas para direcciones, Z/X para A/B, Shift derecho para Select y Enter para Start) o botones en pantalla con raton/touch.
+
+## Tests
+
+Los tests automatizados usan el ejecutor integrado de Node.js y no necesitan
+instalar dependencias. Se requiere Node.js 20 o posterior.
+
+Desde la raiz del proyecto:
+
+```bash
+npm test
+```
+
+La suite cubre registros de CPU, LCD, interrupciones, temporizadores, botones,
+audio, mapa de memoria, controladores de cartucho MBC y FFT.

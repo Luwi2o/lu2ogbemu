@@ -54,6 +54,7 @@ export class CPU{
         this.C = 0;
 
         this.iME = 1;
+        this.retrasoIME = 0;
 
         this.registros = new Registros(tipoConsola, estado);
         this.anteriorPC = this.registros.PC;
@@ -98,8 +99,7 @@ export class CPU{
          * @returns 
          */
         this.ld_r_i_8b = (regd) => {
-            var imm = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             this.registros.R[regd] = imm;
             this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("ld_r_i_8b " + this.nombreR(regd) + ", " + imm.toString(16));
@@ -200,8 +200,7 @@ export class CPU{
          * @returns 
          */
         this.ld_r_mii_8b = (regd) => {
-            var dir = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.PC++), 
-                this.memoria.leer8Bits(this.registros.PC++))
+            var dir = this.leerInmediato16Bits();
             this.registros.R[regd] = this.memoria.leer8Bits(dir);
             this.cPUDebug.instruccionStr = ("ld_r_mii_8b " + this.nombreR(regd) + ", ("+  dir.toString(16) + ")")
             this.ciclos = 16;
@@ -213,7 +212,7 @@ export class CPU{
          * @returns {void}
          */
         this.ld_r_mff00i_8b = (regd) => {
-            var imm = this.memoria.leer8Bits(this.registros.PC++);
+            var imm = this.leerInmediato8Bits();
             var dir = 0xFF00 + imm;
             this.registros.R[regd] = this.memoria.leer8Bits(dir);
             this.ciclos = 12;
@@ -227,8 +226,7 @@ export class CPU{
          * @returns 
          */
         this.ld_mii_r_8b = (regs) => {
-            var dir = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.PC++), 
-                this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             this.memoria.escribir8Bits(dir, this.registros.R[regs]);
             this.ciclos = 16;
             this.cPUDebug.instruccionStr = ("ld_mii_r_8b (" + dir.toString(16) + "), " + this.nombreR(regs));
@@ -241,7 +239,7 @@ export class CPU{
          * @returns 
          */
         this.ld_mff00i_r_8b = (regs) => {
-            var imm = this.memoria.leer8Bits(this.registros.PC++);
+            var imm = this.leerInmediato8Bits();
             var dir = 0xFF00 + imm;
             this.memoria.escribir8Bits(dir, this.registros.R[regs])
             this.ciclos = 12;
@@ -255,8 +253,8 @@ export class CPU{
          * @param {*} regl 
          */
         this.ld_rr_ii_16b = (regh, regl) => {
-            var imml = this.memoria.leer8Bits(this.registros.PC++);
-            var immh = this.memoria.leer8Bits(this.registros.PC++);
+            var imml = this.leerInmediato8Bits();
+            var immh = this.leerInmediato8Bits();
             this.registros.R[regl] = imml;
             this.registros.R[regh] = immh;
             this.ciclos = 12;
@@ -281,8 +279,7 @@ export class CPU{
          *
          */
         this.ld_sp_ii_16b = () => {
-            var dir = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.PC++),
-                this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             this.registros.SP = dir;
             this.ciclos = 12;
             this.cPUDebug.instruccionStr = ("ld_sp_ii_16b SP, " + dir.toString(16))
@@ -303,7 +300,7 @@ export class CPU{
          * 
          */
         this.ld_hl_sp_imm_16b = () => {
-            var e = this.memoria.leer8Bits(this.registros.PC++)
+            var e = this.leerInmediato8Bits();
             e = e << 24 >> 24;
             var spe = (this.registros.SP + e) & 0xFFFF;
             this.C = 0; this.H = 0; this.N = 0; this.Z = 0;
@@ -322,8 +319,7 @@ export class CPU{
          * @param {*} regl 
          */
         this.ldn_rr_sp_16b = (regh, regl) => {
-            var imm = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var auxsp = this.registros.SP + imm;
             this.registros.R[regh] = this.msb(auxsp);
             this.registros.R[regl] = this.lsb(auxsp);
@@ -334,8 +330,7 @@ export class CPU{
          * Escribe el valor de SP en memoria
          */
         this.ld_mii_sp_16b = () => {
-            var dir = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.PC++), 
-                this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             this.memoria.escribir16Bits(dir, this.registros.SP)
             this.ciclos = 20;
             this.cPUDebug.instruccionStr = ("ld_mii_sp_16b (" + dir + "), SP");
@@ -347,7 +342,7 @@ export class CPU{
          * @param {*} regl 
          */
         this.ld_mrr_i_8b = (regh, regl) => {
-            var imm = this.memoria.leer8Bits(this.registros.PC++);
+            var imm = this.leerInmediato8Bits();
             var dir = this.sinSigno16Bits(this.registros.R[regl], this.registros.R[regh]);
             this.memoria.escribir8Bits(dir, imm);
             this.ciclos = 12;
@@ -362,9 +357,8 @@ export class CPU{
          * @returns 
          */
         this.push_rr_16b = (regh, regl) => {
-            this.registros.SP --;
-            this.memoria.escribir8Bits(this.registros.SP-- , this.registros.R[regh]);
-            this.memoria.escribir8Bits(this.registros.SP, this.registros.R[regl]);
+            this.apilar8Bits(this.registros.R[regh]);
+            this.apilar8Bits(this.registros.R[regl]);
             this.ciclos = 16;
             this.cPUDebug.instruccionStr = ("push_rr_16b " + this.nombreR(regh) + this.nombreR(regl));
             return;
@@ -377,8 +371,8 @@ export class CPU{
          * @returns 
          */
         this.pop_rr_16b = (regh, regl) => {
-            this.registros.R[regl] = this.memoria.leer8Bits(this.registros.SP++);
-            this.registros.R[regh] = this.memoria.leer8Bits(this.registros.SP++);
+            this.registros.R[regl] = this.desapilar8Bits();
+            this.registros.R[regh] = this.desapilar8Bits();
             if(regl == F){
                 this.Z = (this.registros.R[regl] & 0x80) >> 7;
                 this.N = (this.registros.R[regl] & 0x40) >> 6;
@@ -436,8 +430,7 @@ export class CPU{
          * @param {*} regd 
          */
         this.add_r_i_8b = (regd) => {
-            var imm = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var res = this.registros.R[regd] + imm;
             this.N = 0, this.Z = 0, this.H = 0, this.C = 0;
             if((this.registros.R[regd] & 0x0F) + (imm & 0x0F) > 0x0F) this.H = 1;
@@ -496,8 +489,7 @@ export class CPU{
          */
         this.adc_r_i_8b = (regd) => {
 
-            var imm = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var res = this.registros.R[regd] + imm + this.C;
             var resH = (this.registros.R[regd] & 0x0F) + (imm & 0x0F) + this.C
 
@@ -555,8 +547,7 @@ export class CPU{
          * @param {*} regd 
          */
         this.sub_r_i_8b = (regd) => {
-            var imm = this.memoria.leer8Bits(this.registros.PC)
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var res = this.registros.R[regd] - imm;
             var resH = (this.registros.R[regd] & 0x0F) - (imm & 0x0F);
             this.N = 1, this.Z = 0, this.H = 0, this.C = 0;
@@ -614,8 +605,7 @@ export class CPU{
          * @param {*} regd 
          */
         this.sbc_r_i_8b = (regd) => {
-            var imm = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var res = this.registros.R[regd] - (imm + this.C);
             var resH = (this.registros.R[regd] & 0x0F) - (imm & 0x0F) - this.C;
             this.N = 1; this.Z = 0, this.H = 0, this.C = 0;
@@ -661,8 +651,7 @@ export class CPU{
          * Hace and con el registro A y lo pone en A
          */
         this.and_i_8b = () => {
-            var imm = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var res = this.registros.R[A] & imm;
             this.registros.R[A] = res;
             this.N = 0; this.Z = 0, this.H = 1, this.C = 0;
@@ -706,8 +695,7 @@ export class CPU{
          * Hace la operacion binaria or con el registro A y un immediato y pone el resultado en A
          */
         this.or_i_8b = () => {
-            var imm = this.memoria.leer8Bits(this.registros.PC)
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var res = this.registros.R[A] | imm;
             this.registros.R[A] = res;
             this.N = 0; this.Z = 0, this.H = 0, this.C = 0;
@@ -751,8 +739,7 @@ export class CPU{
          * 
          */
         this.xor_i_8b = () => {
-            var imm = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var res = this.registros.R[A] ^ imm;
             this.registros.R[A] = res;
             this.N = 0; this.Z = 0; this.H = 0; this.C = 0;
@@ -799,8 +786,7 @@ export class CPU{
          * 
          */
         this.cp_i_8b = () => {
-            var imm = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC++;
+            var imm = this.leerInmediato8Bits();
             var res = this.registros.R[A] - imm;
             this.Z = 0, this.H = 0, this.C = 0, this.N = 1;
             if((res & 0xFF) == 0) this.Z = 1;
@@ -932,7 +918,7 @@ export class CPU{
          */
         this.add_sp_i_16b = () => {
             var sp = this.registros.SP;
-            var e = this.memoria.leer8Bits(this.registros.PC++);
+            var e = this.leerInmediato8Bits();
             e = e << 24 >> 24;
             this.registros.SP = (sp + e) & 0xFFFF;
             this.H = 0, this.C = 0, this.N = 0, this.Z = 0;
@@ -1139,7 +1125,7 @@ export class CPU{
         this.di = () => {
             this.ciclos = 4;
             this.iME = 0;
-            //console.log("di");
+            this.retrasoIME = 0;
             this.cPUDebug.instruccionStr = ("di");
             return;
         }
@@ -1151,8 +1137,7 @@ export class CPU{
          */
         this.ei = () => {
             this.ciclos = 4;
-            this.iME = 1;
-            //console.log("ei");
+            this.retrasoIME = 2;
             this.cPUDebug.instruccionStr = ("ei");
             return;
         }
@@ -1592,8 +1577,7 @@ export class CPU{
 
         //** CB */
         this.cb = () => {
-            var opcode2 = this.memoria.leer8Bits(this.registros.PC);
-            this.registros.PC ++;
+            var opcode2 = this.leerInmediato8Bits();
             switch(opcode2){
 
                 case 0x00: this.rlc_r_8b(B); break;
@@ -1878,8 +1862,7 @@ export class CPU{
          * 
          */
         this.jp_ii_8b = () => {
-            var dir = this.sinSigno16Bits(
-                this.memoria.leer8Bits(this.registros.PC++), this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             this.registros.PC = dir;
             this.ciclos = 16;
             this.cPUDebug.instruccionStr = ("jp_ii_8b " + dir.toString(16));
@@ -1900,8 +1883,7 @@ export class CPU{
          * 
          */
         this.jpnz_8b = () => {
-            var dir = this.sinSigno16Bits(
-                this.memoria.leer8Bits(this.registros.PC++), this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             if(!this.Z) {
                 this.registros.PC = dir;
                 this.ciclos = 16;
@@ -1914,8 +1896,7 @@ export class CPU{
          * 
          */
         this.jpz_8b = () => {
-            var dir = this.sinSigno16Bits(
-                this.memoria.leer8Bits(this.registros.PC++), this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             if(this.Z) {
                 this.registros.PC = dir;
                 this.ciclos = 16;
@@ -1928,8 +1909,7 @@ export class CPU{
          * 
          */
         this.jpnc_8b = () => {
-            var dir = this.sinSigno16Bits(
-                this.memoria.leer8Bits(this.registros.PC++), this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             if(!this.C) {
                 this.registros.PC = dir;
                 this.ciclos = 16;
@@ -1942,8 +1922,7 @@ export class CPU{
          * 
          */
         this.jpc_8b = () => {
-            var dir = this.sinSigno16Bits(
-                this.memoria.leer8Bits(this.registros.PC++), this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             if(this.C) {
                 this.registros.PC = dir;
                 this.ciclos = 16;
@@ -1968,7 +1947,7 @@ export class CPU{
          * 
          */
         this.jr_8b = () => {
-            var e = this.memoria.leer8Bits(this.registros.PC++);
+            var e = this.leerInmediato8Bits();
             e = e << 24 >> 24;
             this.registros.PC = (this.registros.PC + (e)) & 0xFFFF;
             this.ciclos = 12;
@@ -1979,7 +1958,7 @@ export class CPU{
          * 
          */
         this.jrnz_8b = () => {
-            var e = this.memoria.leer8Bits(this.registros.PC++);
+            var e = this.leerInmediato8Bits();
             e = e << 24 >> 24;
             if(!this.Z){
                 this.registros.PC = (this.registros.PC + (e)) & 0xFFFF;
@@ -1992,7 +1971,7 @@ export class CPU{
          * 
          */
         this.jrz_8b = () => {
-            var e = this.memoria.leer8Bits(this.registros.PC++);
+            var e = this.leerInmediato8Bits();
             e = e << 24 >> 24;
             if(this.Z){
                 this.registros.PC = (this.registros.PC + (e)) & 0xFFFF;
@@ -2005,7 +1984,7 @@ export class CPU{
          * 
          */
         this.jrnc_8b = () => {
-            var e = this.memoria.leer8Bits(this.registros.PC++);
+            var e = this.leerInmediato8Bits();
             e = e << 24 >> 24;
             if(!this.C){
                 this.registros.PC = (this.registros.PC + (e)) & 0xFFFF;
@@ -2019,7 +1998,7 @@ export class CPU{
          * 
          */
         this.jrc_8b = () => {
-            var e = this.memoria.leer8Bits(this.registros.PC++);
+            var e = this.leerInmediato8Bits();
             e = e << 24 >> 24;
             if(this.C){
                 this.registros.PC = (this.registros.PC + (e)) & 0xFFFF;
@@ -2036,12 +2015,9 @@ export class CPU{
          */
         this.call = () => {
             // Leer la instruccion a la que se quiere saltar
-            var dir = this.sinSigno16Bits(
-                this.memoria.leer8Bits(this.registros.PC++), this.memoria.leer8Bits(this.registros.PC++));
+            var dir = this.leerInmediato16Bits();
             // Insertar la dir a la proxima instruccion en la pila
-            this.registros.SP--;
-            this.memoria.escribir8Bits(this.registros.SP--, this.msb(this.registros.PC));
-            this.memoria.escribir8Bits(this.registros.SP, this.lsb(this.registros.PC));
+            this.apilar16Bits(this.registros.PC);
             // Salta a la direccion nn
             this.registros.PC = dir;
             this.ciclos = 24;
@@ -2057,13 +2033,12 @@ export class CPU{
         this.callnz = () => {
             
             // Leer la proxima instruccion
-            var dirl = this.memoria.leer8Bits(this.registros.PC++)
-            var dirh = this.memoria.leer8Bits(this.registros.PC++)
+            var dirl = this.leerInmediato8Bits();
+            var dirh = this.leerInmediato8Bits();
             var dir = dirh * 0x100 + dirl;
             if(!this.Z){
                 // Insertar la dir a la proxima instruccion en la pila
-                this.memoria.escribir8Bits(--this.registros.SP, this.msb(this.registros.PC));
-                this.memoria.escribir8Bits(--this.registros.SP, this.lsb(this.registros.PC));
+                this.apilar16Bits(this.registros.PC);
                 // Salta a la direccion nn
                 this.registros.PC = dir;
                 this.ciclos = 24;
@@ -2079,13 +2054,12 @@ export class CPU{
          */
         this.callz = () => {
             // Leer la proxima instruccion
-            var dirl = this.memoria.leer8Bits(this.registros.PC++)
-            var dirh = this.memoria.leer8Bits(this.registros.PC++)
+            var dirl = this.leerInmediato8Bits();
+            var dirh = this.leerInmediato8Bits();
             var dir = dirh * 0x100 + dirl;
             if(this.Z){
                 // Insertar la dir a la proxima instruccion en la pila
-                this.memoria.escribir8Bits(--this.registros.SP, this.msb(this.registros.PC));
-                this.memoria.escribir8Bits(--this.registros.SP, this.lsb(this.registros.PC));
+                this.apilar16Bits(this.registros.PC);
                 // Salta a la direccion nn
                 this.registros.PC = dir;
                 this.ciclos = 24;
@@ -2101,13 +2075,12 @@ export class CPU{
          */
         this.callnc = () => {
             // Leer la proxima instruccion
-            var dirl = this.memoria.leer8Bits(this.registros.PC++)
-            var dirh = this.memoria.leer8Bits(this.registros.PC++)
+            var dirl = this.leerInmediato8Bits();
+            var dirh = this.leerInmediato8Bits();
             var dir = dirh * 0x100 + dirl;
             if(!this.C){
                 // Insertar la dir a la proxima instruccion en la pila
-                this.memoria.escribir8Bits(--this.registros.SP, this.msb(this.registros.PC));
-                this.memoria.escribir8Bits(--this.registros.SP, this.lsb(this.registros.PC));
+                this.apilar16Bits(this.registros.PC);
                 // Salta a la direccion nn
                 this.registros.PC = dir;
                 this.ciclos = 24;
@@ -2123,13 +2096,12 @@ export class CPU{
          */
         this.callc = () => {
             // Leer la proxima instruccion
-            var dirl = this.memoria.leer8Bits(this.registros.PC++)
-            var dirh = this.memoria.leer8Bits(this.registros.PC++)
+            var dirl = this.leerInmediato8Bits();
+            var dirh = this.leerInmediato8Bits();
             var dir = dirh * 0x100 + dirl;
             if(this.C){
                 // Insertar la dir a la proxima instruccion en la pila
-                this.memoria.escribir8Bits(--this.registros.SP, this.msb(this.registros.PC));
-                this.memoria.escribir8Bits(--this.registros.SP, this.lsb(this.registros.PC));
+                this.apilar16Bits(this.registros.PC);
                 // Salta a la direccion nn
                 this.registros.PC = dir;
                 this.ciclos = 24;
@@ -2147,11 +2119,8 @@ export class CPU{
          */
         this.rst = (n) => {
             // Insertar la dir a la direccion actual en la pila
-            if(this.registros.SP != 0){
-                this.memoria.escribir8Bits(--this.registros.SP >>> 0, this.msb(this.registros.PC));
-                this.memoria.escribir8Bits(--this.registros.SP >>> 0, this.lsb(this.registros.PC));
-                this.registros.PC = this.sinSigno16Bits(n, 0x00);
-            }
+            this.apilar16Bits(this.registros.PC);
+            this.registros.PC = this.sinSigno16Bits(n, 0x00);
             this.cPUDebug.instruccionStr = ("rst");
             this.ciclos = 16;
             return;
@@ -2161,8 +2130,7 @@ export class CPU{
          * 
          */
         this.ret = () => {
-            this.registros.PC = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.SP++),
-                this.memoria.leer8Bits(this.registros.SP++));
+            this.registros.PC = this.desapilar16Bits();
             this.ciclos = 16;
             this.cPUDebug.instruccionStr = ("ret");
             return;
@@ -2173,8 +2141,7 @@ export class CPU{
          */
         this.retz = () => {
             if(this.Z){
-                this.registros.PC = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.SP++),
-                    this.memoria.leer8Bits(this.registros.SP++));
+                this.registros.PC = this.desapilar16Bits();
                 this.ciclos = 20;
             } else this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("retz")
@@ -2186,8 +2153,7 @@ export class CPU{
          */
         this.retnz = () => {
             if(!this.Z){
-                this.registros.PC = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.SP++),
-                    this.memoria.leer8Bits(this.registros.SP++));
+                this.registros.PC = this.desapilar16Bits();
                 this.ciclos = 20;
             } else this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("retnz")
@@ -2199,8 +2165,7 @@ export class CPU{
          */
         this.retc = () => {
             if(this.C){
-                this.registros.PC = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.SP++),
-                    this.memoria.leer8Bits(this.registros.SP++));
+                this.registros.PC = this.desapilar16Bits();
                 this.ciclos = 20;
             } else this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("retc")
@@ -2212,8 +2177,7 @@ export class CPU{
          */
         this.retnc = () => {
             if(!this.C){
-                this.registros.PC = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.SP++),
-                    this.memoria.leer8Bits(this.registros.SP++));
+                this.registros.PC = this.desapilar16Bits();
                 this.ciclos = 20;
             } else this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("retnc")
@@ -2224,10 +2188,10 @@ export class CPU{
          * 
          */
         this.reti = () => {
-            this.registros.PC = this.sinSigno16Bits(this.memoria.leer8Bits(this.registros.SP++),
-                this.memoria.leer8Bits(this.registros.SP++));
+            this.registros.PC = this.desapilar16Bits();
             //TODO: activa la interrupciones IME
             this.iME = 1;
+            this.retrasoIME = 0;
             this.ciclos = 16;
             this.cPUDebug.instruccionStr = ("reti")
             return;
@@ -2557,6 +2521,36 @@ export class CPU{
     sinSigno16Bits(lsb, msb){
         return (msb << 8) | lsb;
     }
+
+    leerInmediato8Bits(){
+        var dato = this.memoria.leer8Bits(this.registros.PC);
+        this.registros.PC = (this.registros.PC + 1) & 0xFFFF;
+        return dato;
+    }
+
+    leerInmediato16Bits(){
+        return this.sinSigno16Bits(this.leerInmediato8Bits(), this.leerInmediato8Bits());
+    }
+
+    apilar8Bits(dato){
+        this.registros.SP = (this.registros.SP - 1) & 0xFFFF;
+        this.memoria.escribir8Bits(this.registros.SP, dato);
+    }
+
+    desapilar8Bits(){
+        var dato = this.memoria.leer8Bits(this.registros.SP);
+        this.registros.SP = (this.registros.SP + 1) & 0xFFFF;
+        return dato;
+    }
+
+    apilar16Bits(dato){
+        this.apilar8Bits(this.msb(dato));
+        this.apilar8Bits(this.lsb(dato));
+    }
+
+    desapilar16Bits(){
+        return this.sinSigno16Bits(this.desapilar8Bits(), this.desapilar8Bits());
+    }
     
     /**
      * D
@@ -2589,6 +2583,10 @@ export class CPU{
 
         this.ejecutar(opcode);
         this.actualizarFlag();
+        if (this.retrasoIME > 0) {
+            this.retrasoIME--;
+            if (this.retrasoIME === 0) this.iME = 1;
+        }
 
         if (dbg?.activo) {
             mem.mostrarLogs = false;
@@ -2622,16 +2620,13 @@ export class CPU{
         }
         // Ha encontrado una peticion de interrupcion
         if(intActivada && this.iME == 1){
-            //console.log("intActivada")
             //TODO esperar cinco ciclos
             this.iME = 0;
             // Se resetea el flag.
             this.interrupciones.regs.flagsInterrupcion[i] = false;
 
             // Insertar el valor actual del registro PC en la pila. Consume 2 ciclos.
-            this.registros.SP--;
-            this.memoria.escribir8Bits(this.registros.SP--, this.msb(this.registros.PC));
-            this.memoria.escribir8Bits(this.registros.SP, this.lsb(this.registros.PC));
+            this.apilar16Bits(this.registros.PC);
             // PC se actualiza con la direccion del manejador de la instruccion.
             this.registros.PC = this.interrupciones.regs.iHandlerDir[i];
             this.ciclos = 20;
@@ -2661,7 +2656,7 @@ export class CPU{
     }
 
     actualizarFlag() {
-        this.registros.R[F] = this.Z * 0x80 + this.N * 0x40 + this.H * 0x20 + this.C * 0x10 + (this.registros.R[F] & 0x0F); 
+        this.registros.R[F] = this.Z * 0x80 + this.N * 0x40 + this.H * 0x20 + this.C * 0x10;
     }
 
     imprimirRegistros8Bits(){

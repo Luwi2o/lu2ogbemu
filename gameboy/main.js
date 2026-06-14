@@ -42,7 +42,6 @@ function destruirInstanciaActual() {
         gb.destruir();
         gb = null;
         dbg = null;
-        console.log("Instancia del emulador destruida.");
     }
 
     // Limpiar el canvas
@@ -82,7 +81,6 @@ function aplicarVolumenDesdeSlider() {
     const set = (v) => {
         var nuevoVolumen = Math.pow(v / 100.0, 2);
         gb.sonido.actualizarVolumen(nuevoVolumen);
-        console.log("volumen cambiado a:" + nuevoVolumen);
     };
     set(Number(volumen.value));
 }

@@ -27,20 +27,13 @@ export class Gameboy{
      * 
      * @param {Uint8Array} bytesPrograma 
      * @param {Uint8Array} guardado 
-     * @param {Object} estado 
+     * @param {Object} estado
      */
     constructor(bytesPrograma, guardado, estado){
-        console.debug("---------- INICIO GAMEBOY ----------");
-
         this.guardado = guardado instanceof Uint8Array ? guardado : new Uint8Array(0);
         
         if(guardado){
-            console.log("GAMEBOY: Se ha proporcionado un archivo de guardado")
             this.guardado = guardado;
-        }
-
-        if(estado){
-            console.log("GAMEBOY: Se ha proporcionado un archivo de estado")
         }
 
         this.tiempoAhora = performance.now();

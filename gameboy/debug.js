@@ -20,8 +20,6 @@ class Debug{
         document.getElementById("boton-paso").addEventListener("mousedown", ()=>{
             if(this.gameboy.cPUDebug.pausado){
                 this.gameboy.paso();
-            } else {
-                console.log("CPU no esta pausada")
             }
         });
 

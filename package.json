@@ -1,0 +1,11 @@
+{
+    "name": "lu2ogbemu",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "node --test gameboy/test/*.test.js"
+    },
+    "engines": {
+        "node": ">=20"
+    }
+}

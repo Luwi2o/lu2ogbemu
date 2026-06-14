@@ -163,7 +163,6 @@ export class Memoria{
         this.escrituraLatchRTC = false;
         this.latchRTC = false;
 
-        //console.log("Numero de bancos ROM: " + numeroDeBancosROM);
         this.rOM = rOM;
 
         this.wRAM0 = new Uint8Array(0x1000).fill(0);
@@ -344,7 +343,6 @@ export class Memoria{
         this.sRAM = new Uint8Array(this.tamanyoRAM).fill(0); // RAM externa
         if(guardado != null && guardado.length > 0){
             this.sRAM = guardado;
-            console.log("MEMORIA: Cargando archivo de guardado");
         }
 
         // 014A — Codigo de destino
@@ -358,73 +356,44 @@ export class Memoria{
         // 014E-014F — Global checksum
         // TODO
 
-        var strTipoMBC = ""
-        var strRAM = "NO RAM"
         switch(this.tipoCartucho){
             case GB_TIPO_CARTUCHO_ROM_RAM:
             case GB_TIPO_CARTUCHO_ROM_RAM_BATERIA:
-                strRAM = "RAM";
             case GB_TIPO_CARTUCHO_ROM_SOLO:
                 this.tipoMBC = ROM;
-                strTipoMBC = "ROM";
                 break;
 
             case GB_TIPO_CARTUCHO_MBC1_RAM:
             case GB_TIPO_CARTUCHO_MBC1_RAM_BATERIA:
-                strRAM = "RAM";
             case GB_TIPO_CARTUCHO_MBC1:
                 this.tipoMBC = MBC1;
-                strTipoMBC = "MBC1";
                 break;
 
             case GB_TIPO_CARTUCHO_MBC2:
             case GB_TIPO_CARTUCHO_MBC2_BATERIA:
                 this.tipoMBC = MBC2;
-                strTipoMBC = "MBC2";
                 break;
 
             case GB_TIPO_CARTUCHO_MBC3_RAM:
             case GB_TIPO_CARTUCHO_MBC3_RAM_BATERIA:
             case GB_TIPO_CARTUCHO_MBC3_TIMER_RAM_BATERIA:
-                strRAM = "RAM";
             case GB_TIPO_CARTUCHO_MBC3:
             case GB_TIPO_CARTUCHO_MBC3_TIMER_BATERIA:
                 this.tipoMBC = MBC3;
-                strTipoMBC = "MBC3";
                 break;
 
             case GB_TIPO_CARTUCHO_MBC5_RAM:
             case GB_TIPO_CARTUCHO_MBC5_RAM_BATERIA:
             case GB_TIPO_CARTUCHO_MBC5_VIBRACION_RAM:
             case GB_TIPO_CARTUCHO_MBC5_VIBRACION_RAM_BATERIA:
-                strRAM = "RAM";
             case GB_TIPO_CARTUCHO_MBC5:
             case GB_TIPO_CARTUCHO_MBC5_VIBRACION:
                 this.tipoMBC = MBC5;
-                strTipoMBC = "MBC5";
                 break;
 
             default:
                 this.tipoMBC = ROM;
-                strTipoMBC = "OTRO"
         }
-
-
-        console.debug("-----------MEMORIA-----------")
-        console.debug("-----------------------------")
-        console.debug("Titulo del cartucho: " + this.tituloCartucho);
-        console.debug("Codigo de fabrica: " + this.codigoFabricaCartucho);
-        console.debug("Tamaño de ROM: " + (16 * (this.tamanyoROM / 0x4000)) + "KiB")
-        console.debug("Numero de bancos de ROM: " + this.cantidadBancosROM)
-        console.debug("bits necesarios= " + this.cantidadBancosROM.toString(2));
-        console.debug("Tamaño de RAM: " + (8 * (this.tamanyoRAM / 0x2000)) + "KiB" )
-        console.debug("Numero de bancos de RAM: " + this.cantidadBancosRAM)
-        console.debug("Tipo de cartucho: " + strTipoMBC + " (" + this.tipoCartucho + ")");
-        console.debug("RAM: " + strRAM);
-
-        console.debug("Bits de numero de bancos de ROM: " + this.cantidadBancosROM.toString(2))
-        console.debug("Bits necesarios ROM: " + this.bitsNecesariosBancosROM)
-        console.debug("Mascara bits necesarios ROM: " + this.mascaraBitsNecesariosBancosROM.toString(2))
     
     }
 
@@ -711,14 +680,12 @@ export class Memoria{
             else if(indice >= 0x2000 && indice <= 0x3FFF){
                 this.numeroBancoROMBajo = dato & 0x1F;
                 this.actualizarBancoROMMBC1();
-                //console.log("MBC1 Se cambia el banco ROM a " + this.numeroBancoROM)
             }
             // 4000–5FFF — Numero de Banco de RAM o Bits altos del numero de banco ROM (Solo escritura)
             else if(indice >= 0x4000 && indice <= 0x5FFF){
                 this.numeroBancoROMAlto = dato & 0x03;
                 this.numeroBancoRAM = this.bancoRAMMBC1();
                 this.actualizarBancoROMMBC1();
-                //console.log("MBC1 Se cambia el registro secundario a " + this.numeroBancoROMAlto);
             }
             // 6000–7FFF — Banking Mode Select (Write Only)
             else if(indice >= 0x6000  && indice <= 0x7FFF){
@@ -726,7 +693,6 @@ export class Memoria{
                 if((dato & 0x01) == 0) this.modoBanco = 0;
                 else this.modoBanco = 1;
                 this.numeroBancoRAM = this.bancoRAMMBC1();
-                //console.log("BANCO: " + this.modoBanco);
             }
         }
         // https://gbdev.io/pandocs/MBC2.html
@@ -752,7 +718,6 @@ export class Memoria{
                     // especifican el banco de ROM. (dato & 00001111())
                     this.numeroBancoROM = dato & 0x0F;
                     if(this.numeroBancoROM == 0) this.numeroBancoROM = 0x01;
-                    //console.log("MBC2 Se cambia el banco a " + this.numeroBancoROM)
                 }
 
             }
@@ -779,7 +744,6 @@ export class Memoria{
                     this.numeroBancoROM = 0x01;
                 }
                 this.numeroBancoROM &= this.mascaraBitsNecesariosBancosROM;
-                //console.log("MBC3 Se cambia el banco ROM a " + this.numeroBancoROM);
             }
             // 4000–5FFF — Numero de Banco de RAM 
             // — o — Selector de Registro RTC (Solo Escritura)
@@ -787,7 +751,6 @@ export class Memoria{
                 // Escribir un valor en el rango 0x00 - 0x03 mapea el banco de RAM externo
                 if(dato >= 0x00 && dato <= 0x03){
                     this.numeroBancoRAM = dato;
-                    //console.log("MBC3 Se cambia el banco RAM a " + this.numeroBancoRAM)
                 } else if (dato >= 0x08 && dato <= 0x0C){
                     this.selectorRegistroRTC = dato;
                 }
@@ -820,17 +783,14 @@ export class Memoria{
             // 2000–2FFF — 8 bits menos significantes del numero de banco ROM (Solo Escritura)
             else if(indice >= 0x2000  && indice <= 0x2FFF){
                 this.numeroBancoROM = (this.numeroBancoROM & 0x0100) + (dato & 0xFF);
-                //console.log("Se cambia el banco a " + this.numeroBancoROM)
             }
             // 3000–3FFF — bit 9  del numero de banco ROM (Solo Escritura)
             else if(indice >= 0x3000  && indice <= 0x3FFF){
                 this.numeroBancoROM = (this.numeroBancoROM & 0x00FF) + ((dato & 0x01) << 8);
-                //console.log("Se cambia el banco a " + this.numeroBancoROM)
             }
             // 4000-5FFF - Numero de banco de RAM (Solo Escritura)
             else if(indice >= 0x4000  && indice <= 0x5FFF){
                 this.numeroBancoRAM = (dato & 0x0F);
-                //console.log("Se cambia el banco de RAM a " + this.numeroBancoRAM)
             }
 
         }
@@ -849,15 +809,12 @@ export class Memoria{
                 if(this.numeroBancoROM == 0) this.numeroBancoROM = 0x01;
                 // Se enmascaran los bits que no se necesitan
                 this.numeroBancoROM &= this.mascaraBitsNecesariosBancosROM;
-                console.log("ROM Se cambia el banco ROM a " + this.numeroBancoROM)
-                //console.log("Se cambia el banco a " + this.numeroBancoROM)
             }
             // 4000–5FFF — Numero de Banco de RAM o Bits altos del numero de banco ROM (Solo escritura)
             else if(indice >= 0x4000  && indice <= 0x5FFF){
                 // Se utiliza para seleccionar el banco de RAM en los cartuchos con 32KiB
                 if(this.tamanyoRAM == 0x8000){
                     this.numeroBancoRAM = dato & 0x03;
-                    console.log("MBC1 Se cambia el banco RAM a " + this.numeroBancoRAM);
                 }
                 // O se utiliza para seleccionar los 2 bits mas significantes (5,6) del
                 // banco de ROM si es un cartucho con 1MiB o mas.
@@ -866,7 +823,6 @@ export class Memoria{
                     this.numeroBancoROM = (this.numeroBancoROM & 0x1F) + ((dato & 0x03) << 5);
                     if(this.numeroBancoROM == 0) this.numeroBancoROM = 0x01;
                     this.numeroBancoROM &= this.mascaraBitsNecesariosBancosROM;
-                    console.log("MBC1 Se cambia el banco (bits altos) ROM a " + this.numeroBancoROM);
                 }
                 // Si la RAM o la ROM no son lo suficientemente grandes no se hace nada
                 else{
@@ -878,7 +834,6 @@ export class Memoria{
                 // 
                 if((dato & 0x01)  == 0) this.modoBanco = 0;
                 else this.modoBanco = 1;
-                console.log("BANCO: " + this.modoBanco);
             }
         }
 

@@ -723,7 +723,6 @@ export class Pantalla{
                     // Si está activada la interrupcion STAT en modo 0
                     if(this.regLCD.interrupcionEstadoEnModo0){
                         // Se pide una interrupcion de lcdstat
-                        //console.log("interrupcion modo0 ")
                         this.ints.regs.flagsInterrupcion[LCDSTAT_INT] = true;
                     }
                 }

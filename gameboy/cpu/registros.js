@@ -53,7 +53,6 @@ export class Registros{
             this.cargarEstado(estado);
         } else {
             if(bootROM){
-                console.debug("REGISTROS: Cambiando registros a tipo de consola 'BGB_DMG0'");
                 this.R[A] = 0x00;
                 this.R[F] = 0x00;
                 this.R[B] = 0x00;
@@ -67,7 +66,6 @@ export class Registros{
             } else {
             // https://gbdev.io/pandocs/Power_Up_Sequence.html
                 if(tipoConsola == DMG0){
-                    console.debug("Cambiando registros a tipo de consola 'BGB'");
                     this.R[A] = 0x01;
                     this.R[F] = 0x00;
                     this.R[B] = 0xFF;
@@ -77,7 +75,6 @@ export class Registros{
                     this.R[H] = 0x84;
                     this.R[L] = 0x03;
                 } else if (tipoConsola == BGB){
-                    console.debug("Cambiando registros a tipo de consola 'BGB'");
                     this.R[A] = 0x01;
                     this.R[F] = 0x00;
                     this.R[B] = 0x00;
@@ -87,7 +84,6 @@ export class Registros{
                     this.R[H] = 0xC0;
                     this.R[L] = 0x60;
                 } else if (tipoConsola == BGB_DMG0){
-                    console.debug("REGISTROS: Cambiando registros a tipo de consola 'BGB_DMG0'");
                     this.R[A] = 0x01;
                     this.R[F] = 0xB0;
                     this.R[B] = 0x00;

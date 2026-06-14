@@ -96,7 +96,6 @@ export class Botones{
         }
 
         if(!this.regs.esDireccional && tipo == ES_DIRECCION){
-            console.log("dir");
             this.ints.regs.flagsInterrupcion[JOYPAD_INT] = true;
         }
         return;
