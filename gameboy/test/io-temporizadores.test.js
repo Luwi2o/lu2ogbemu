@@ -3,8 +3,10 @@ import test from 'node:test';
 
 import { Interrupciones } from '../cpu/interrupciones.js';
 import { Botones } from '../io/botones.js';
+import { Pantalla } from '../io/pantalla.js';
 import { RegistrosBotones } from '../memoria/registros/registros_botones.js';
 import { RegistrosInterrupciones } from '../memoria/registros/registros_interrupciones.js';
+import { RegistrosLCD } from '../memoria/registros/registros_lcd.js';
 import {
     BGB_DMG0,
     BOTON_A,
@@ -21,6 +23,43 @@ import {
     SELECCIONADO_DIRECCION,
     TIMER_INT,
 } from '../constantes.js';
+
+function crearPantallaSinCanvas() {
+    const regLCD = new RegistrosLCD();
+    const regInt = new RegistrosInterrupciones();
+    const pantalla = Object.create(Pantalla.prototype);
+
+    Object.assign(pantalla, {
+        modo: 0,
+        dots: 0,
+        linea: 0,
+        lineaVentana: 0,
+        ventanaVisible: false,
+        terminada: false,
+        duracionModo3: 172,
+        duracionModo0: 204,
+        scrollXLinea: 0,
+        scrollYLinea: 0,
+        windowXLinea: 0,
+        windowYLinea: 0,
+        BGTileMapAreaLinea: false,
+        BGWindowTileDataAreaLinea: false,
+        _statLYCPrev: false,
+        lcdEnableAnterior: false,
+        regLCD,
+        ints: { regs: regInt },
+        dibujarLinea() {},
+        dibujarPantalla() {},
+    });
+
+    return { pantalla, regLCD };
+}
+
+function avanzarCiclosPantalla(pantalla, ciclos) {
+    for (let restantes = ciclos; restantes > 0; restantes -= 4) {
+        pantalla.enCiclos(Math.min(4, restantes));
+    }
+}
 
 test('El divisor acumula ciclos incluso con TIMA desactivado', () => {
     const registros = new RegistrosInterrupciones();
@@ -53,6 +92,33 @@ test('TIMA respeta la frecuencia, conserva ciclos parciales y solicita interrupc
     interrupciones.enCiclos(16 * 3);
     assert.equal(registros.contador, 0xaa);
     assert.equal(registros.flagsInterrupcion[TIMER_INT], false);
+});
+
+test('Al encender LCD, LY cambia entre los delay 109 y 110 de Blargg', () => {
+    for (const [delay, lineaEsperada] of [
+        [109, 0],
+        [110, 1],
+    ]) {
+        const { pantalla, regLCD } = crearPantallaSinCanvas();
+
+        regLCD.escribirLCDControl(0);
+        pantalla.enCiclos(4);
+        regLCD.escribirLCDControl(0x81);
+
+        // LDH (LCDC),A consume 12 clocks en este núcleo; después Blargg
+        // espera el número indicado de ciclos de máquina (4 clocks cada uno).
+        pantalla.enCiclos(12);
+        avanzarCiclosPantalla(pantalla, delay * 4);
+
+        assert.equal(regLCD.lineaY, lineaEsperada, `delay ${delay}`);
+
+        if (delay === 110) {
+            avanzarCiclosPantalla(pantalla, 455);
+            assert.equal(regLCD.lineaY, 1, 'la segunda línea aún no ha terminado');
+            pantalla.enCiclos(1);
+            assert.equal(regLCD.lineaY, 2, 'las líneas normales duran 456 dots');
+        }
+    }
 });
 
 test('RegistrosBotones selecciona grupos y combina entradas activas en bajo', () => {

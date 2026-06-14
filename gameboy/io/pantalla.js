@@ -672,7 +672,10 @@ export class Pantalla{
         // Reiniciar estos contadores evita arrastrar el estado anterior de PPU.
         if(!this.lcdEnableAnterior){
             this.lcdEnableAnterior = true;
-            this.dots = 0;
+            // En DMG, la primera scanline tras habilitar LCDC.7 queda adelantada
+            // cuatro dots respecto a una línea normal. Este desfase sitúa el
+            // cambio de LY entre los delay 109 y 110 de Blargg lcd_sync.
+            this.dots = 4;
             this.linea = 0;
             this.lineaVentana = 0;
             this.ventanaVisible = false;
