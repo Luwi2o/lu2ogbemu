@@ -124,6 +124,7 @@ export class RegistrosCanal4{
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6
         // Bits 5-0 sin usar
         if(disparar){
+            if(this.ciclosLongitud >= 64) this.ciclosLongitud = 0;
             this.volumen = this.volumenInicial;
             this.sonido.reiniciarLFSR();
             if(this.volumenInicial != 0 || this.direccionEnvoltorio != 0){
@@ -149,6 +150,15 @@ export class RegistrosCanal4{
      * @param {number} ciclos 
      */
     enCiclos(ciclos){
+        if(this.longitudActivada){
+            this.ciclosLongitud += Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
+            this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
+            if(this.ciclosLongitud >= 64 && this.activado){
+                this.activado = false;
+                this.sonido.desactivarCanal(3);
+            }
+        }
+
         if(this.activado){
             // https://gbdev.io/pandocs/Audio_Registers.html#ff12--nr12-channel-1-volume--envelope
             // 4194304 Hz / 64 Hz  = 65536 ciclos / iteracion
@@ -170,17 +180,6 @@ export class RegistrosCanal4{
                     this.sonido.actualizarGanancia(3, (this.volumen / 15.0));
                 }
 
-            }
-            // 4194304 / 128 = 32768
-            // Se incrementa el divisor con una frecuencia de 16382Hz, que es cada
-            // 64 ciclos de la cpu
-            if(this.longitudActivada){
-                this.ciclosLongitud += Math.floor((this.ciclosLongitudMod + ciclos) / 32768)
-                this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 32768;
-                if(this.ciclosLongitud >= 64){
-                    this.activado = false
-                    this.sonido.desactivarCanal(3)
-                }
             }
         }
     }

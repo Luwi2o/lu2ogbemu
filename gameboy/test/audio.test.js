@@ -196,6 +196,59 @@ test('RegistrosAudio conserva NR50/NR51 y refleja maestro y canales en NR52', ()
     assert.deepEqual(sonido.llamadas.at(-1), ['activarMaestro']);
 });
 
+test('La longitud limpia el estado de NR52 exactamente al llegar a cero', () => {
+    const { regAud, regCnl1, regCnl2, regCnl3, regCnl4 } = crearComponentes();
+    const casos = [
+        {
+            canal: regCnl1,
+            mascara: 0x01,
+            preparar() {
+                regCnl1.escribirCicloYTemporizador(0x3c);
+                regCnl1.escribirVolumenYEnvoltorio(0xf0);
+                regCnl1.escribirPeriodoAltoYControl(0xc0);
+            },
+        },
+        {
+            canal: regCnl2,
+            mascara: 0x02,
+            preparar() {
+                regCnl2.escribirCicloYTemporizador(0x3c);
+                regCnl2.escribirVolumenYEnvoltorio(0xf0);
+                regCnl2.escribirPeriodoAltoYControl(0xc0);
+            },
+        },
+        {
+            canal: regCnl3,
+            mascara: 0x04,
+            preparar() {
+                regCnl3.escribirActivadoDAC(0x80);
+                regCnl3.escribirTemporizador(0xfc);
+                regCnl3.escribirPeriodoAltoYControl(0xc0);
+            },
+        },
+        {
+            canal: regCnl4,
+            mascara: 0x08,
+            preparar() {
+                regCnl4.escribirTemporizador(0x3c);
+                regCnl4.escribirVolumenYEnvoltorio(0xf0);
+                regCnl4.escribirControl(0xc0);
+            },
+        },
+    ];
+
+    for (const { canal, mascara, preparar } of casos) {
+        preparar();
+        assert.notEqual(regAud.leerAudioControlMaestro() & mascara, 0);
+
+        canal.enCiclos(16384 * 3);
+        assert.notEqual(regAud.leerAudioControlMaestro() & mascara, 0);
+
+        canal.enCiclos(16384);
+        assert.equal(regAud.leerAudioControlMaestro() & mascara, 0);
+    }
+});
+
 test('Canal 1 codifica registros, dispara sonido y expira por longitud', () => {
     const sonido = new SonidoFake();
     const canal = new RegistrosCanal1(undefined, sonido);
@@ -214,7 +267,7 @@ test('Canal 1 codifica registros, dispara sonido y expira por longitud', () => {
     assert.equal(canal.activado, true);
 
     canal.ciclosLongitud = 63;
-    canal.enCiclos(32768);
+    canal.enCiclos(16384);
     assert.equal(canal.activado, false);
     assert.deepEqual(sonido.llamadas.at(-1), ['desactivarCanal', 0]);
 });
@@ -264,7 +317,7 @@ test('Canal 2 codifica registros, aplica envolvente y expira por longitud', () =
     assert.equal(canal.volumen, 0);
 
     canal.ciclosLongitud = 63;
-    canal.enCiclos(32768);
+    canal.enCiclos(16384);
     assert.equal(canal.activado, false);
     assert.deepEqual(sonido.llamadas.at(-1), ['desactivarCanal', 1]);
 
@@ -314,8 +367,8 @@ test('Canal 3 solo dispara con DAC activo y expira por longitud', () => {
     canal.escribirActivadoDAC(0x80);
     canal.escribirPeriodoAltoYControl(0xc0);
     assert.equal(canal.activado, true);
-    canal.ciclosLongitud = 63;
-    canal.enCiclos(32768);
+    canal.ciclosLongitud = 255;
+    canal.enCiclos(16384);
     assert.equal(canal.activado, false);
     assert.deepEqual(sonido.llamadas.at(-1), ['desactivarCanal', 2]);
 
@@ -344,7 +397,7 @@ test('Canal 4 configura ruido, dispara LFSR y termina por longitud', () => {
     assert.ok(sonido.llamadas.some(([nombre]) => nombre === 'reiniciarLFSR'));
 
     canal.ciclosLongitud = 63;
-    canal.enCiclos(32768);
+    canal.enCiclos(16384);
     assert.equal(canal.activado, false);
     assert.deepEqual(sonido.llamadas.at(-1), ['desactivarCanal', 3]);
 });

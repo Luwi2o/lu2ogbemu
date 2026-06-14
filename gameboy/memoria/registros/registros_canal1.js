@@ -158,7 +158,8 @@ export class RegistrosCanal1{
         // Bits 5-3 sin usar
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
         if(disparar){
-            this.ciclosLongitud = 0;
+            // Un trigger solo recarga la longitud si el contador ya expiró.
+            if(this.ciclosLongitud >= 64) this.ciclosLongitud = 0;
             this.activado = true;
             this.volumen = this.volumenInicial;
             this.sonido.activarCanal(0);
@@ -183,6 +184,17 @@ export class RegistrosCanal1{
      * @param {*} ciclos 
      */
     enCiclos(ciclos){
+        // El frame sequencer relojiza la longitud a 256 Hz incluso si el canal
+        // ya está desactivado; al llegar al máximo limpia su estado en NR52.
+        if(this.longitudActivada){
+            this.ciclosLongitud += Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
+            this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
+            if(this.ciclosLongitud >= 64 && this.activado){
+                this.activado = false;
+                this.sonido.desactivarCanal(0);
+            }
+        }
+
         if(this.activado){
             // 128 Hz
             this.ciclosBarrido = Math.floor((this.ciclosBarridoMod + ciclos) / (65536*4))
@@ -224,19 +236,6 @@ export class RegistrosCanal1{
                     this.sonido.actualizarGanancia(0, this.volumen / 15);
                 }
 
-            }
-            // 4194304 / 128 = 32768
-            // Se incrementa el divisor con una frecuencia de 16382Hz, que es cada
-            // 64 ciclos de la cpu
-            if(this.longitudActivada){
-                this.ciclosLongitud += Math.floor((this.ciclosLongitudMod + ciclos) / 32768)
-                this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 32768;
-                if(this.ciclosLongitud >= 64){
-                    if(this.activado){
-                        this.activado = false;
-                        this.sonido.desactivarCanal(0);
-                    }
-                }
             }
         }
     }

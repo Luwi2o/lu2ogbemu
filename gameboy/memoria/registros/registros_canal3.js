@@ -18,6 +18,7 @@ export class RegistrosCanal3{
         this.ondaActualizada = false;
 
         this.ciclosLongitud = 0;
+        this.ciclosLongitudMod = 0;
 
         this.nivelSalida = 0;
 
@@ -72,6 +73,7 @@ export class RegistrosCanal3{
      */
     escribirTemporizador(dato){
         this.temporizadorInicial = dato & 0xFF;
+        this.ciclosLongitud = this.temporizadorInicial;
     }
 
     leerTemporizador(){
@@ -131,6 +133,7 @@ export class RegistrosCanal3{
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
         this.sonido.actualizarFrecuencia(2, this.periodo);
         if(disparar && this.activadoDAC){
+            if(this.ciclosLongitud >= 256) this.ciclosLongitud = 0;
             this.activado = true;
             this.sonido.activarCanal(2);
         }
@@ -152,17 +155,12 @@ export class RegistrosCanal3{
      * @param {number} ciclos 
      */
     enCiclos(ciclos){
-        if(this.activado){
-            // 4194304 / 128 = 32768
-            // Se incrementa el divisor con una frecuencia de 16382Hz, que es cada
-            // 64 ciclos de la cpu
-            if(this.longitudActivada){
-                var ciclosLongitudPasados = Math.floor(ciclos / 32768)
-                this.ciclosLongitud += ciclosLongitudPasados + (ciclos % 32768);
-                if(this.ciclosLongitud >= 64){
-                    this.activado = false
-                    this.sonido.desactivarCanal(2)
-                }
+        if(this.longitudActivada){
+            this.ciclosLongitud += Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
+            this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
+            if(this.ciclosLongitud >= 256 && this.activado){
+                this.activado = false;
+                this.sonido.desactivarCanal(2);
             }
         }
     }
