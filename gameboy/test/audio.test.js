@@ -188,8 +188,12 @@ test('RegistrosAudio conserva NR50/NR51 y refleja maestro y canales en NR52', ()
     assert.deepEqual(sonido.llamadas.at(-1), ['activarMaestro']);
 
     regAud.escribirAudioControlMaestro(0);
-    assert.equal(regAud.leerAudioControlMaestro(), 0x7d);
+    assert.equal(regAud.leerAudioControlMaestro(), 0x70);
     assert.deepEqual(sonido.llamadas.at(-1), ['desactivarMaestro']);
+
+    regAud.escribirAudioControlMaestro(0xff);
+    assert.equal(regAud.leerAudioControlMaestro(), 0xf0);
+    assert.deepEqual(sonido.llamadas.at(-1), ['activarMaestro']);
 });
 
 test('Canal 1 codifica registros, dispara sonido y expira por longitud', () => {

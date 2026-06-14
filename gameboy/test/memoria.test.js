@@ -157,6 +157,7 @@ test('La RAM de onda y los registros IO delegan en sus componentes', () => {
     }
     assert.equal(regCnl3.ondaActualizada, true);
 
+    memoria.escribir8Bits(0xff26, 0x80);
     memoria.escribir8Bits(0xff10, 0x6d);
     assert.equal(regCnl1.leerBarrido(), 0x6d);
     memoria.escribir8Bits(0xff05, 0x12);
@@ -165,4 +166,81 @@ test('La RAM de onda y los registros IO delegan en sus componentes', () => {
     assert.equal(regInt.contador, 0x12);
     assert.equal(regInt.contadorModulo, 0x34);
     assert.equal(regInt.reloj, 16);
+});
+
+test('Los registros de audio y Wave RAM aplican sus máscaras de lectura', () => {
+    const { memoria } = crearMemoria();
+    const mascaras = [
+        0x80, 0x3f, 0x00, 0xff, 0xbf, 0xff, 0x3f, 0x00,
+        0xff, 0xbf, 0x7f, 0xff, 0x9f, 0xff, 0xbf, 0xff,
+        0xff, 0x00, 0x00, 0xbf, 0x00, 0x00, 0x70, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ];
+
+    memoria.escribir8Bits(0xff26, 0x80);
+    for (let dato = 0; dato <= 0xff; dato++) {
+        for (let offset = 0; offset < mascaras.length; offset++) {
+            const direccion = 0xff10 + offset;
+            if(direccion === 0xff26) continue;
+
+            memoria.escribir8Bits(direccion, dato);
+            assert.equal(
+                memoria.leer8Bits(direccion),
+                dato | mascaras[offset],
+                `$${direccion.toString(16)} con $${dato.toString(16)}`
+            );
+        }
+    }
+});
+
+test('Apagar el APU borra sus registros pero conserva Wave RAM', () => {
+    const { memoria } = crearMemoria();
+    const mascaras = [
+        0x80, 0x3f, 0x00, 0xff, 0xbf, 0xff, 0x3f, 0x00,
+        0xff, 0xbf, 0x7f, 0xff, 0x9f, 0xff, 0xbf, 0xff,
+        0xff, 0x00, 0x00, 0xbf, 0x00, 0x00,
+    ];
+
+    memoria.escribir8Bits(0xff26, 0x80);
+    for (let direccion = 0xff10; direccion < 0xff26; direccion++) {
+        memoria.escribir8Bits(direccion, 0xff);
+    }
+    for (let direccion = 0xff30; direccion <= 0xff3f; direccion++) {
+        memoria.escribir8Bits(direccion, 0x37);
+    }
+
+    memoria.escribir8Bits(0xff26, 0);
+    memoria.escribir8Bits(0xff26, 0x80);
+
+    for (let offset = 0; offset < mascaras.length; offset++) {
+        assert.equal(
+            memoria.leer8Bits(0xff10 + offset),
+            mascaras[offset],
+            `$${(0xff10 + offset).toString(16)}`
+        );
+    }
+    assert.equal(memoria.leer8Bits(0xff26), 0xf0);
+    for (let direccion = 0xff30; direccion <= 0xff3f; direccion++) {
+        assert.equal(memoria.leer8Bits(direccion), 0x37);
+    }
+});
+
+test('El APU apagado ignora escrituras salvo en NR52 y Wave RAM', () => {
+    const { memoria } = crearMemoria();
+    const mascaras = [
+        0x80, 0x3f, 0x00, 0xff, 0xbf, 0xff, 0x3f, 0x00,
+        0xff, 0xbf, 0x7f, 0xff, 0x9f, 0xff, 0xbf, 0xff,
+        0xff, 0x00, 0x00, 0xbf, 0x00, 0x00,
+    ];
+
+    memoria.escribir8Bits(0xff26, 0);
+    for (let offset = 0; offset < mascaras.length; offset++) {
+        memoria.escribir8Bits(0xff10 + offset, 0xff);
+        assert.equal(memoria.leer8Bits(0xff10 + offset), mascaras[offset]);
+    }
+
+    memoria.escribir8Bits(0xff30, 0xa5);
+    assert.equal(memoria.leer8Bits(0xff30), 0xa5);
 });

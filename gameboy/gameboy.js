@@ -187,8 +187,9 @@ export class Gameboy{
 
     paso(){
         this.cpu.ciclo()
-        this.pantalla.enCiclos(this.cpu.ciclos)
-        this.interrupciones.enCiclos(this.cpu.ciclos);
+        const ciclosBase = this.memoria.velocidadDoble ? this.cpu.ciclos / 2 : this.cpu.ciclos;
+        this.pantalla.enCiclos(ciclosBase)
+        this.interrupciones.enCiclos(this.cpu.ciclos - this.cpu.ciclosInternos);
     }
 
     pausar(){
@@ -261,12 +262,13 @@ export class Gameboy{
         this.pantalla.terminada = false;
         while(!this.pantalla.terminada && !this.cPUDebug.pausado){
             this.cpu.ciclo();
-            this.pantalla.enCiclos(this.cpu.ciclos);
-            this.interrupciones.enCiclos(this.cpu.ciclos);
-            this.regCnl1.enCiclos(this.cpu.ciclos);
-            this.regCnl2.enCiclos(this.cpu.ciclos);
-            this.regCnl3.enCiclos(this.cpu.ciclos);
-            this.regCnl4.enCiclos(this.cpu.ciclos);
+            const ciclosBase = this.memoria.velocidadDoble ? this.cpu.ciclos / 2 : this.cpu.ciclos;
+            this.pantalla.enCiclos(ciclosBase);
+            this.interrupciones.enCiclos(this.cpu.ciclos - this.cpu.ciclosInternos);
+            this.regCnl1.enCiclos(ciclosBase);
+            this.regCnl2.enCiclos(ciclosBase);
+            this.regCnl3.enCiclos(ciclosBase);
+            this.regCnl4.enCiclos(ciclosBase);
         }
         if (this.pantalla.terminada) this._fpsFrames++;
     }

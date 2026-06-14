@@ -106,6 +106,15 @@ export class RegistrosCanal4{
         this.sonido.actualizarDivisor(3, this.divisorReloj, this.cambioReloj);
     }
 
+    leerFrecuenciaYAletoriedad(){
+        // NR43 es completamente legible; la máscara del bus no altera sus bits.
+        return (
+            this.cambioReloj << 4 |
+            this.anchoLFSR << 3 |
+            this.divisorReloj
+        );
+    }
+
     /**
      * Escribe al registro de control
      * @param {number} dato 

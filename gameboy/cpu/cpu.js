@@ -36,6 +36,7 @@ export class CPU{
 
         this.ciclos = 0;
         this.ciclosTimer = 0;
+        this.ciclosInternos = 0;
         this.halted = false;
 
         // ***Flags***
@@ -1115,9 +1116,15 @@ export class CPU{
         // TODO
         /** STOP
          * 
-         * @returns 
+         * @returns
          */
         this.stop = () => {
+            this.memoria.leer8Bits(this.registros.PC);
+            this.registros.PC = (this.registros.PC + 1) & 0xFFFF;
+            if(this.memoria.mejorasCGBActivadas && this.memoria.prepararCambioVelocidad){
+                this.memoria.velocidadDoble = !this.memoria.velocidadDoble;
+                this.memoria.prepararCambioVelocidad = false;
+            }
             this.ciclos = 4;
             this.cPUDebug.instruccionStr = ("stop");
             return;
@@ -2531,6 +2538,7 @@ export class CPU{
     leerInmediato8Bits(){
         var dato = this.memoria.leer8Bits(this.registros.PC);
         this.registros.PC = (this.registros.PC + 1) & 0xFFFF;
+        this.avanzarCiclosInternos(4);
         return dato;
     }
 
@@ -2564,6 +2572,7 @@ export class CPU{
      * D
      */
    ciclo(){
+        this.ciclosInternos = 0;
         if(this.rutinaInterrupcion()) return;
 
         if (this.halted) {
@@ -2583,6 +2592,7 @@ export class CPU{
         const pc = regs.PC;
         const opcode = mem.leer8Bits(pc);
         regs.PC = (pc + 1) & 0xFFFF;
+        this.avanzarCiclosInternos(4);
 
         // Breakpoints solo si debug activo
         if (dbg?.activo && dbg.pausasActivadas && dbg.breakpointsSet?.has(regs.PC)) {
@@ -2641,6 +2651,11 @@ export class CPU{
             return true;
         }
         return false;
+    }
+
+    avanzarCiclosInternos(ciclos){
+        this.interrupciones.enCiclos(ciclos);
+        this.ciclosInternos += ciclos;
     }
 
 

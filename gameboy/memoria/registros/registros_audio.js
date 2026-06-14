@@ -48,15 +48,59 @@ export class RegistrosAudio{
      * @param {*} dato 
      */
     escribirAudioControlMaestro(dato){
-        this.audioEncendido = (dato & 0x80) == 0x80; // Bit 7 audio encendido
-        if(this.audioEncendido){
+        const encender = (dato & 0x80) == 0x80; // Bit 7 audio encendido
+        if(encender){
+            this.audioEncendido = true;
             this.sonido.activarMaestro();
         } else {
+            // En DMG, limpiar NR52.7 apaga los canales y pone NR10-NR51 a cero.
+            // Wave RAM pertenece al canal 3, pero el hardware no la borra.
+            this.audioEncendido = false;
+            this.reiniciarRegistros();
+            const canales = [
+                this.regsCnl1,
+                this.regsCnl2,
+                this.regsCnl3,
+                this.regsCnl4,
+            ];
+            for(let i = 0; i < canales.length; i++){
+                canales[i].activado = false;
+                this.sonido.desactivarCanal(i);
+            }
             this.sonido.desactivarMaestro();
         }
         // Bit 6, 5, 4 no se usan
         // Bits 3-0 solo lectura
 
+    }
+
+    // Reproduce el reset visible que comprueba Blargg dmg_sound/01-registers.
+    // Se usan los setters para mantener sincronizado el estado derivado del audio.
+    reiniciarRegistros(){
+        this.regsCnl1.escribirBarrido(0);
+        this.regsCnl1.escribirCicloYTemporizador(0);
+        this.regsCnl1.escribirVolumenYEnvoltorio(0);
+        this.regsCnl1.escribirPeriodoBajo(0);
+        this.regsCnl1.escribirPeriodoAltoYControl(0);
+
+        this.regsCnl2.escribirCicloYTemporizador(0);
+        this.regsCnl2.escribirVolumenYEnvoltorio(0);
+        this.regsCnl2.escribirPeriodoBajo(0);
+        this.regsCnl2.escribirPeriodoAltoYControl(0);
+
+        this.regsCnl3.escribirActivadoDAC(0);
+        this.regsCnl3.escribirTemporizador(0);
+        this.regsCnl3.escribirNivelSalida(0);
+        this.regsCnl3.escribirPeriodoBajo(0);
+        this.regsCnl3.escribirPeriodoAltoYControl(0);
+
+        this.regsCnl4.escribirTemporizador(0);
+        this.regsCnl4.escribirVolumenYEnvoltorio(0);
+        this.regsCnl4.escribirFrecuenciaYAletoriedad(0);
+        this.regsCnl4.escribirControl(0);
+
+        this.escribirVolumenMaestro(0);
+        this.escribirAudioPanoramica(0);
     }
 
     /** https://gbdev.io/pandocs/Audio_Registers.html#global-control-registers

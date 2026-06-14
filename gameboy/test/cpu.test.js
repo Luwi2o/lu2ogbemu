@@ -559,6 +559,35 @@ test('CPU retrasa EI una instrucción, DI cancela el retraso y F mantiene el nib
     assert.equal(cpu.registros.R[F] & 0x0f, 0);
 });
 
+test('KEY1 y STOP alternan la velocidad CGB y consumen el byte de relleno', () => {
+    const { cpu, memoria } = crearCPU({ cgb: true });
+    cpu.registros.PC = 0xc000;
+    memoria.escribir8Bits(0xc000, 0x00);
+
+    assert.equal(memoria.leer8Bits(0xff4d), 0x7e);
+    memoria.escribir8Bits(0xff4d, 0x01);
+    assert.equal(memoria.leer8Bits(0xff4d), 0x7f);
+    cpu.stop();
+    assert.equal(cpu.registros.PC, 0xc001);
+    assert.equal(memoria.velocidadDoble, true);
+    assert.equal(memoria.prepararCambioVelocidad, false);
+    assert.equal(memoria.leer8Bits(0xff4d), 0xfe);
+
+    memoria.escribir8Bits(0xff4d, 0x01);
+    cpu.registros.PC = 0xc001;
+    memoria.escribir8Bits(0xc001, 0x00);
+    cpu.stop();
+    assert.equal(cpu.registros.PC, 0xc002);
+    assert.equal(memoria.velocidadDoble, false);
+    assert.equal(memoria.leer8Bits(0xff4d), 0x7e);
+
+    const dmg = crearCPU();
+    dmg.memoria.escribir8Bits(0xff4d, 0x01);
+    dmg.cpu.registros.PC = 0xc000;
+    dmg.cpu.stop();
+    assert.equal(dmg.memoria.velocidadDoble, false);
+});
+
 test('CPU incrementa, decrementa y suma valores de 8 y 16 bits con flags', () => {
     const { cpu, memoria } = crearCPU();
 
@@ -843,6 +872,63 @@ test('CPU ciclo hace fetch/decode, actualiza flags y respeta HALT', () => {
     cpu.ciclo();
     assert.equal(cpu.registros.PC, 0xc002);
     assert.equal(cpu.ciclos, 4);
+});
+
+test('CPU lee TIMA en el tercer ciclo de LDH A,(a8)', () => {
+    const { cpu, interrupciones, memoria, regInt } = crearCPU();
+    cpu.registros.PC = 0xc000;
+    memoria.escribir8Bits(0xc000, 0xf0);
+    memoria.escribir8Bits(0xc001, 0x05);
+    regInt.escribirTAC(0x05);
+    regInt.contador = 0;
+    interrupciones.ciclosContador = 8;
+
+    cpu.ciclo();
+
+    assert.equal(cpu.registros.R[A], 1);
+    assert.equal(cpu.ciclos, 12);
+    assert.equal(cpu.ciclosInternos, 8);
+
+    interrupciones.enCiclos(cpu.ciclos - cpu.ciclosInternos);
+    assert.equal(interrupciones.ciclosContador, 4);
+});
+
+test('CPU lee TIMA en el cuarto ciclo de LD A,(a16)', () => {
+    const { cpu, interrupciones, memoria, regInt } = crearCPU();
+    cpu.registros.PC = 0xc000;
+    memoria.escribir8Bits(0xc000, 0xfa);
+    memoria.escribir8Bits(0xc001, 0x05);
+    memoria.escribir8Bits(0xc002, 0xff);
+    regInt.escribirTAC(0x05);
+    regInt.contador = 0;
+    interrupciones.ciclosContador = 4;
+
+    cpu.ciclo();
+
+    assert.equal(cpu.registros.R[A], 1);
+    assert.equal(cpu.ciclos, 16);
+    assert.equal(cpu.ciclosInternos, 12);
+});
+
+test('CPU lee memoria en el tercer ciclo de BIT n,(HL)', () => {
+    const opcodes = [0x46, 0x4e, 0x56, 0x5e, 0x66, 0x6e, 0x76, 0x7e];
+
+    for (const [bit, opcode] of opcodes.entries()) {
+        const { cpu, interrupciones, memoria, regInt } = crearCPU();
+        cpu.registros.PC = 0xc000;
+        cpu.registros.escribir16Bits(H, L, 0xff05);
+        memoria.escribir8Bits(0xc000, 0xcb);
+        memoria.escribir8Bits(0xc001, opcode);
+        regInt.escribirTAC(0x05);
+        regInt.contador = (1 << bit) - 1;
+        interrupciones.ciclosContador = 8;
+
+        cpu.ciclo();
+
+        assert.equal(cpu.Z, 0, `CB ${opcode.toString(16)}`);
+        assert.equal(cpu.ciclos, 12);
+        assert.equal(cpu.ciclosInternos, 8);
+    }
 });
 
 test('CPU atiende interrupciones por prioridad y despierta de HALT', () => {

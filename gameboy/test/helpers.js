@@ -73,7 +73,7 @@ export function crearComponentes(tipoConsola) {
     return { sonido, regLCD, regInt, regBot, regAud, regCnl1, regCnl2, regCnl3, regCnl4 };
 }
 
-export function crearROM({ bancos = 2, tipo = 0x00, tamanyoRAM = 0x00 } = {}) {
+export function crearROM({ bancos = 2, tipo = 0x00, tamanyoRAM = 0x00, cgb = false } = {}) {
     const codigosTamanyo = new Map([
         [2, 0x00],
         [4, 0x01],
@@ -94,6 +94,7 @@ export function crearROM({ bancos = 2, tipo = 0x00, tamanyoRAM = 0x00 } = {}) {
     rom[0x0147] = tipo;
     rom[0x0148] = codigosTamanyo.get(bancos) ?? 0x00;
     rom[0x0149] = tamanyoRAM;
+    if(cgb) rom[0x0143] = 0x80;
     return rom;
 }
 

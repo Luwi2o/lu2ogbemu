@@ -83,6 +83,15 @@ import{
 import { bootROM } from "../bootrom.js";
 import { CPUDebug } from "../cpu/cpu_debug.js";
 
+// Bits que el hardware fuerza a 1 al leer NR10-NR52 y registros sin uso.
+// Tabla verificada por Blargg dmg_sound/01-registers y documentada en Pan Docs.
+const MASCARAS_LECTURA_AUDIO = Uint8Array.from([
+    0x80, 0x3F, 0x00, 0xFF, 0xBF, 0xFF, 0x3F, 0x00,
+    0xFF, 0xBF, 0x7F, 0xFF, 0x9F, 0xFF, 0xBF, 0xFF,
+    0xFF, 0x00, 0x00, 0xBF, 0x00, 0x00, 0x70, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+]);
+
 // Memoria de GameBoy
 
 // Tiene un bus de direcciones de 16 bits con el que se accede a ROM, RAM y I/O
@@ -175,6 +184,8 @@ export class Memoria{
         this.codigoFabricaCartucho = "";
         this.mejorasCGBActivadas = false;
         this.soloCGB = false;
+        this.velocidadDoble = false;
+        this.prepararCambioVelocidad = false;
         this.flagSGB = false;
         this.tipoCartucho = 0x00;
         
@@ -656,6 +667,11 @@ export class Memoria{
                     case GB_PANTALLA_REG_LYC_COMP : lectura = this.regLCD.lineaYComparar; break;
                     case GB_PANTALLA_REG_WX : lectura = this.regLCD.windowX; break;
                     case GB_PANTALLA_REG_WY : lectura = this.regLCD.windowY; break;
+                    case 0xFF4D:
+                        lectura = 0x7E |
+                            (this.velocidadDoble ? 0x80 : 0) |
+                            (this.prepararCambioVelocidad ? 0x01 : 0);
+                        break;
                     case GB_PALETA_REG_BG : lectura = this.regLCD.leerPaletaBGVentana(); break;
                     case GB_PALETA_REG_OBP0 : lectura = this.regLCD.leerPaletaObj0(); break;
                     case GB_PALETA_REG_OBP1 : lectura = this.regLCD.leerPaletaObj1(); break;
@@ -690,9 +706,16 @@ export class Memoria{
 
                     // Registros de Audio Canal 4
                     case GB_SONIDO_REG_NR42 : lectura = this.regCnl4.leerVolumenYEnvoltorio(); break;
+                    case GB_SONIDO_REG_NR43 : lectura = this.regCnl4.leerFrecuenciaYAletoriedad(); break;
                     case GB_SONIDO_REG_NR44 : lectura = this.regCnl4.leerControl(); break;
                     
                     default: lectura = this.iOReg[indice - 0xFF00]; break;
+                }
+
+                // Los registros APU no devuelven necesariamente el último valor
+                // escrito: los bits no legibles se leen siempre a 1.
+                if(indice >= GB_SONIDO_REG_NR10 && indice < 0xFF30){
+                    lectura |= MASCARAS_LECTURA_AUDIO[indice - GB_SONIDO_REG_NR10];
                 }
             }
 
@@ -993,8 +1016,16 @@ export class Memoria{
         else if(indice >= 0xFF00  && indice <= 0xFF7F){
             // FF30-FF3F RAM de ondas
             if(indice >= 0xFF30  && indice <= 0xFF3F){
+                // Wave RAM permanece accesible aunque NR52 tenga el APU apagado.
                 this.regCnl3.ondaRAM[indice - 0xFF30] = dato;
                 this.regCnl3.ondaActualizada = true;
+            } else if(
+                indice >= GB_SONIDO_REG_NR10 &&
+                indice <= GB_SONIDO_REG_NR51 &&
+                !this.regAud.audioEncendido
+            ){
+                // En DMG, apagar NR52 bloquea escrituras en NR10-NR51.
+                return;
             } else {
                 switch(indice){
                     // Registro botones
@@ -1010,6 +1041,9 @@ export class Memoria{
                     case GB_PANTALLA_OAM_DMA_TRANSFER : this.transferenciaDmaOam(dato); break;
                     case GB_PANTALLA_REG_WX : this.regLCD.windowX = dato; break;
                     case GB_PANTALLA_REG_WY : this.regLCD.windowY = dato; break;
+                    case 0xFF4D:
+                        this.prepararCambioVelocidad = (dato & 0x01) !== 0;
+                        break;
                     case GB_PALETA_REG_BG : this.regLCD.escribirPaletaBGVentana(dato); break;
                     case GB_PALETA_REG_OBP0 : this.regLCD.escribirPaletaObj0(dato); break;
                     case GB_PALETA_REG_OBP1 : this.regLCD.escribirPaletaObj1(dato); break;
@@ -1022,7 +1056,13 @@ export class Memoria{
                     case GB_TEMPORIZADOR_REG_TMA : this.regInt.contadorModulo = dato; break;
     
                     // Registros de Audio Maestro
-                    case GB_SONIDO_REG_NR52 : this.regAud.escribirAudioControlMaestro(dato); break;
+                    case GB_SONIDO_REG_NR52 :
+                        this.regAud.escribirAudioControlMaestro(dato);
+                        if(!this.regAud.audioEncendido){
+                            // Limpia también los registros APU sin componente propio.
+                            this.iOReg.fill(0, 0x10, 0x30);
+                        }
+                        break;
                     case GB_SONIDO_REG_NR51 : this.regAud.escribirAudioPanoramica(dato); break;
                     case GB_SONIDO_REG_NR50 : this.regAud.escribirVolumenMaestro(dato); break;
     
@@ -1117,7 +1157,13 @@ export class Memoria{
             case GB_TEMPORIZADOR_REG_TIMA : this.regInt.contador = dato; break;
             case GB_TEMPORIZADOR_REG_TMA : this.regInt.contadorModulo = dato; break;
 
-            case GB_SONIDO_REG_NR52 : this.regAud.escribirAudioControlMaestro(dato); break;
+            case GB_SONIDO_REG_NR52 :
+                this.regAud.escribirAudioControlMaestro(dato);
+                if(!this.regAud.audioEncendido){
+                    // Mantiene la ruta de restauración sincronizada con el bus normal.
+                    this.iOReg.fill(0, 0x10, 0x30);
+                }
+                break;
             case GB_SONIDO_REG_NR51 : this.regAud.escribirAudioPanoramica(dato); break;
             case GB_SONIDO_REG_NR50 : this.regAud.escribirVolumenMaestro(dato); break;
 
