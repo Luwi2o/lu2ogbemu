@@ -249,6 +249,24 @@ test('La longitud limpia el estado de NR52 exactamente al llegar a cero', () => 
     }
 });
 
+test('Un trigger no habilita canales cuyo DAC está desactivado', () => {
+    const { regAud, regCnl1, regCnl2, regCnl3, regCnl4 } = crearComponentes();
+
+    regCnl1.escribirVolumenYEnvoltorio(0x07);
+    regCnl1.escribirPeriodoAltoYControl(0x80);
+
+    regCnl2.escribirVolumenYEnvoltorio(0x07);
+    regCnl2.escribirPeriodoAltoYControl(0x80);
+
+    regCnl3.escribirActivadoDAC(0);
+    regCnl3.escribirPeriodoAltoYControl(0x80);
+
+    regCnl4.escribirVolumenYEnvoltorio(0x07);
+    regCnl4.escribirControl(0x80);
+
+    assert.equal(regAud.leerAudioControlMaestro() & 0x0f, 0);
+});
+
 test('Canal 1 codifica registros, dispara sonido y expira por longitud', () => {
     const sonido = new SonidoFake();
     const canal = new RegistrosCanal1(undefined, sonido);

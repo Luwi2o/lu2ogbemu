@@ -55,7 +55,6 @@ export class RegistrosCanal3{
         this.activadoDAC = (dato & 0x80) == 0x80; // Bit 7
         // Bits 6-0 no se usan
         if(this.activadoDAC){
-            this.sonido.activarCanal(2);
             this.sonido.actualizarOnda3(this.ondaRAM);
         } else {
             this.activado = false;

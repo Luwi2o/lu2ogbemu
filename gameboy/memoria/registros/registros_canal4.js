@@ -36,6 +36,7 @@ export class RegistrosCanal4{
         // Controla cuanto se incrementa/decrementa la envoltura
         this.velocidadEnvoltorio = 0x00;
         this.volumen;
+        this.activadoDAC = false;
 
         // https://gbdev.io/pandocs/Audio_Registers.html#ff22--nr43-channel-4-frequency--randomness
         this.cambioReloj = 0;
@@ -80,7 +81,8 @@ export class RegistrosCanal4{
         else this.direccionEnv = +1;
         this.velocidadEnvoltorio = dato & 0x07;
         this.sonido.actualizarGanancia(3, this.volumen / 15);
-        if(this.volumenInicial == 0 && this.direccionEnvoltorio == 0){
+        this.activadoDAC = (dato & 0xF8) != 0;
+        if(!this.activadoDAC){
             this.activado = false;
             this.sonido.desactivarCanal(3);
         }
@@ -127,7 +129,7 @@ export class RegistrosCanal4{
             if(this.ciclosLongitud >= 64) this.ciclosLongitud = 0;
             this.volumen = this.volumenInicial;
             this.sonido.reiniciarLFSR();
-            if(this.volumenInicial != 0 || this.direccionEnvoltorio != 0){
+            if(this.activadoDAC){
                 this.activado = true;
                 this.sonido.activarCanal(3);
                 this.sonido.actualizarGanancia(3, this.volumen / 15);

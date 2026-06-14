@@ -827,6 +827,7 @@ export class CPU{
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var res = (regfrommem + 1) & 0xFF;
             var resH = ((regfrommem & 0x0F) + 1)
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 0;
@@ -864,6 +865,7 @@ export class CPU{
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var res = regfrommem - 1;
             var resH = (regfrommem & 0x0F) - 1;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 1;
@@ -1012,6 +1014,7 @@ export class CPU{
             var regfrommem = this.memoria.leer8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var res = (((regfrommem & 0x0F) << 4) + ((regfrommem & 0xF0) >> 4));
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.H = 0, this.C = 0, this.N = 0, this.Z = 0;
@@ -1234,6 +1237,7 @@ export class CPU{
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var bit7 = (regfrommem & 0x80) >> 7;
             var res = ((regfrommem << 1) + bit7) & 0xFF;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 0, this.C = bit7;
@@ -1268,6 +1272,7 @@ export class CPU{
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var bit7 = (regfrommem & 0x80) >> 7;
             var res = ((regfrommem << 1) + this.C) & 0xFF;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 0, this.C = bit7;
@@ -1302,6 +1307,7 @@ export class CPU{
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var bit0 = (regfrommem & 0x01);
             var res = ((bit0 << 7) + (regfrommem >> 1)) & 0xFF;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 0, this.C = bit0;
@@ -1335,6 +1341,7 @@ export class CPU{
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var bit0 = (regfrommem & 0x01);
             var res = ((this.C << 7) + (regfrommem >> 1)) & 0xFF;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 0, this.C = bit0;
@@ -1369,6 +1376,7 @@ export class CPU{
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var bit7 = (regfrommem & 0x80) >> 7;
             var res = (regfrommem << 1) & 0xFF;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 0, this.C = bit7;
@@ -1405,6 +1413,7 @@ export class CPU{
             var bit0 = (regfrommem & 0x01);
             var bit7 = (regfrommem & 0x80);
             var res = ((regfrommem >> 1) + bit7)& 0xFF;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 0, this.C = bit0;
@@ -1438,6 +1447,7 @@ export class CPU{
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var bit0 = (regfrommem & 0x01);
             var res = (regfrommem >> 1) & 0xFF;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.Z = 0, this.H = 0, this.N = 0, this.C = bit0;
@@ -1531,6 +1541,7 @@ export class CPU{
             var regfrommem = this.memoria.leer8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var res = ( 0x01 << nbit) | regfrommem;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.ciclos = 16;
@@ -1562,6 +1573,7 @@ export class CPU{
             var regfrommem = this.memoria.leer8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]));
             var res = (0xFF - ( 0x01 << nbit)) & regfrommem;
+            this.avanzarCiclosInternos(4);
             this.memoria.escribir8Bits(
                 this.sinSigno16Bits(this.registros.R[regmeml], this.registros.R[regmemh]), res);
             this.ciclos = 16;

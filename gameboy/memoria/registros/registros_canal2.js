@@ -33,6 +33,7 @@ export class RegistrosCanal2{
         // Controla cuanto se incrementa/decrementa la envoltura
         this.velocidadEnvoltorio = 0x00;
         this.volumen;
+        this.activadoDAC = false;
 
         // https://gbdev.io/pandocs/Audio_Registers.html#ff13--nr13-channel-1-period-low-write-only
         // https://gbdev.io/pandocs/Audio_Registers.html#ff14--nr14-channel-1-period-high--control
@@ -83,12 +84,10 @@ export class RegistrosCanal2{
         else this.direccionEnv = +1;
         this.velocidadEnvoltorio = dato & 0x07;
         this.sonido.actualizarGanancia(1, this.volumen / 15);
-        if(this.volumenInicial == 0 && this.direccionEnvoltorio == 0){
+        this.activadoDAC = (dato & 0xF8) != 0;
+        if(!this.activadoDAC){
             this.activado = false;
             this.sonido.desactivarCanal(1);
-        } else {
-            this.activado = true;
-            this.sonido.activarCanal(1);
         }
     }
 
@@ -123,7 +122,7 @@ export class RegistrosCanal2{
         // Bits 5-3 sin usar
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
         this.sonido.actualizarFrecuencia(1, this.periodo);
-        if(disparar){
+        if(disparar && this.activadoDAC){
             if(this.ciclosLongitud >= 64) this.ciclosLongitud = 0;
             this.activado = true;
             this.volumen = this.volumenInicial;

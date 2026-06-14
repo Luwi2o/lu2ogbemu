@@ -38,6 +38,7 @@ export class RegistrosCanal1{
         // Controla cuanto se incrementa/decrementa la envoltura
         this.velocidadEnvoltorio = 0x00;
         this.volumen = 0;
+        this.activadoDAC = false;
 
         // https://gbdev.io/pandocs/Audio_Registers.html#ff13--nr13-channel-1-period-low-write-only
         // https://gbdev.io/pandocs/Audio_Registers.html#ff14--nr14-channel-1-period-high--control
@@ -117,13 +118,11 @@ export class RegistrosCanal1{
         else this.direccionEnv = +1;
         this.velocidadEnvoltorio = dato & 0x07; //Bits 2-0
         this.sonido.actualizarGanancia(0, this.volumen / 15);
+        this.activadoDAC = (dato & 0xF8) != 0;
 
-        if(this.volumenInicial == 0 && this.direccionEnvoltorio == 0){
+        if(!this.activadoDAC){
             this.activado = false;
             this.sonido.desactivarCanal(0);
-        } else {
-            this.activado = true;
-            this.sonido.activarCanal(0);
         }
     }
 
@@ -157,7 +156,7 @@ export class RegistrosCanal1{
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6
         // Bits 5-3 sin usar
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
-        if(disparar){
+        if(disparar && this.activadoDAC){
             // Un trigger solo recarga la longitud si el contador ya expiró.
             if(this.ciclosLongitud >= 64) this.ciclosLongitud = 0;
             this.activado = true;

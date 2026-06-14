@@ -18,6 +18,8 @@ import { Audio } from './io/audio/audio.js';
 import { CPUDebug } from './cpu/cpu_debug.js';
 import { BGB_DMG0 } from './constantes.js';
 
+const CICLOS_POR_FRAME = 70224;
+
 /**
  * Emula una gameboy
  */
@@ -260,9 +262,15 @@ export class Gameboy{
      */
     _emularUnFrame(){
         this.pantalla.terminada = false;
-        while(!this.pantalla.terminada && !this.cPUDebug.pausado){
+        let ciclosEmulados = 0;
+        while(
+            !this.pantalla.terminada &&
+            !this.cPUDebug.pausado &&
+            ciclosEmulados < CICLOS_POR_FRAME
+        ){
             this.cpu.ciclo();
             const ciclosBase = this.memoria.velocidadDoble ? this.cpu.ciclos / 2 : this.cpu.ciclos;
+            ciclosEmulados += ciclosBase;
             this.pantalla.enCiclos(ciclosBase);
             this.interrupciones.enCiclos(this.cpu.ciclos - this.cpu.ciclosInternos);
             this.regCnl1.enCiclos(ciclosBase);

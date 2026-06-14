@@ -931,6 +931,63 @@ test('CPU lee memoria en el tercer ciclo de BIT n,(HL)', () => {
     }
 });
 
+test('CPU escribe en el cuarto ciclo de las modificaciones CB sobre (HL)', () => {
+    const opcodes = [
+        0x06, 0x0e, 0x16, 0x1e, 0x26, 0x2e, 0x36, 0x3e,
+        0x86, 0x8e, 0x96, 0x9e, 0xa6, 0xae, 0xb6, 0xbe,
+        0xc6, 0xce, 0xd6, 0xde, 0xe6, 0xee, 0xf6, 0xfe,
+    ];
+
+    for (const opcode of opcodes) {
+        const { cpu, interrupciones, memoria, regInt } = crearCPU();
+        cpu.registros.PC = 0xc000;
+        cpu.registros.escribir16Bits(H, L, 0xff05);
+        memoria.escribir8Bits(0xc000, 0xcb);
+        memoria.escribir8Bits(0xc001, opcode);
+        regInt.escribirTAC(0x05);
+        regInt.contador = 1;
+        interrupciones.ciclosContador = 4;
+
+        let timaAntesDeEscribir;
+        const escribir8Bits = memoria.escribir8Bits.bind(memoria);
+        memoria.escribir8Bits = (direccion, dato) => {
+            if (direccion === 0xff05) timaAntesDeEscribir = regInt.contador;
+            escribir8Bits(direccion, dato);
+        };
+
+        cpu.ciclo();
+
+        assert.equal(timaAntesDeEscribir, 2, `CB ${opcode.toString(16)}`);
+        assert.equal(cpu.ciclos, 16);
+        assert.equal(cpu.ciclosInternos, 12);
+    }
+});
+
+test('CPU escribe en el tercer ciclo de INC y DEC (HL)', () => {
+    for (const opcode of [0x34, 0x35]) {
+        const { cpu, interrupciones, memoria, regInt } = crearCPU();
+        cpu.registros.PC = 0xc000;
+        cpu.registros.escribir16Bits(H, L, 0xff05);
+        memoria.escribir8Bits(0xc000, opcode);
+        regInt.escribirTAC(0x05);
+        regInt.contador = 1;
+        interrupciones.ciclosContador = 8;
+
+        let timaAntesDeEscribir;
+        const escribir8Bits = memoria.escribir8Bits.bind(memoria);
+        memoria.escribir8Bits = (direccion, dato) => {
+            if (direccion === 0xff05) timaAntesDeEscribir = regInt.contador;
+            escribir8Bits(direccion, dato);
+        };
+
+        cpu.ciclo();
+
+        assert.equal(timaAntesDeEscribir, 2, opcode.toString(16));
+        assert.equal(cpu.ciclos, 12);
+        assert.equal(cpu.ciclosInternos, 8);
+    }
+});
+
 test('CPU atiende interrupciones por prioridad y despierta de HALT', () => {
     const { cpu, memoria, regInt } = crearCPU();
     cpu.registros.PC = 0x4567;
