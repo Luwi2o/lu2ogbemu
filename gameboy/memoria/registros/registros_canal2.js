@@ -118,7 +118,15 @@ export class RegistrosCanal2{
      */
     escribirPeriodoAltoYControl(dato){
         const disparar = (dato & 0x80) == 0x80 // Bit 7
+        const longitudActivadaAntes = this.longitudActivada;
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6
+        if(!longitudActivadaAntes && this.longitudActivada && this.ciclosLongitudMod < 8192){
+            this.ciclosLongitud++;
+            if(this.ciclosLongitud >= 64 && this.activado){
+                this.activado = false;
+                this.sonido.desactivarCanal(1);
+            }
+        }
         // Bits 5-3 sin usar
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
         this.sonido.actualizarFrecuencia(1, this.periodo);
@@ -147,9 +155,10 @@ export class RegistrosCanal2{
      * @param {*} ciclos 
      */
     enCiclos(ciclos){
+        const ciclosLongitud = Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
+        this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
         if(this.longitudActivada){
-            this.ciclosLongitud += Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
-            this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
+            this.ciclosLongitud += ciclosLongitud;
             if(this.ciclosLongitud >= 64 && this.activado){
                 this.activado = false;
                 this.sonido.desactivarCanal(1);

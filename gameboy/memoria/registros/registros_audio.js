@@ -101,6 +101,12 @@ export class RegistrosAudio{
 
         this.escribirVolumenMaestro(0);
         this.escribirAudioPanoramica(0);
+
+        // Apagar NR52 reinicia el frame sequencer usado por los contadores.
+        this.regsCnl1.ciclosLongitudMod = 0;
+        this.regsCnl2.ciclosLongitudMod = 0;
+        this.regsCnl3.ciclosLongitudMod = 0;
+        this.regsCnl4.ciclosLongitudMod = 0;
     }
 
     /** https://gbdev.io/pandocs/Audio_Registers.html#global-control-registers

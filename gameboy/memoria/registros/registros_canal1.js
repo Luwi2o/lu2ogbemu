@@ -153,7 +153,15 @@ export class RegistrosCanal1{
      */
     escribirPeriodoAltoYControl(dato){
         const disparar = (dato & 0x80) == 0x80 // Bit 7
+        const longitudActivadaAntes = this.longitudActivada;
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6
+        if(!longitudActivadaAntes && this.longitudActivada && this.ciclosLongitudMod < 8192){
+            this.ciclosLongitud++;
+            if(this.ciclosLongitud >= 64 && this.activado){
+                this.activado = false;
+                this.sonido.desactivarCanal(0);
+            }
+        }
         // Bits 5-3 sin usar
         this.periodo = (this.periodo & 0x0FF) | ((dato & 0x07) << 8) // Bit 2-0
         if(disparar && this.activadoDAC){
@@ -185,9 +193,10 @@ export class RegistrosCanal1{
     enCiclos(ciclos){
         // El frame sequencer relojiza la longitud a 256 Hz incluso si el canal
         // ya está desactivado; al llegar al máximo limpia su estado en NR52.
+        const ciclosLongitud = Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
+        this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
         if(this.longitudActivada){
-            this.ciclosLongitud += Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
-            this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
+            this.ciclosLongitud += ciclosLongitud;
             if(this.ciclosLongitud >= 64 && this.activado){
                 this.activado = false;
                 this.sonido.desactivarCanal(0);

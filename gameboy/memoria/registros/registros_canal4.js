@@ -123,7 +123,15 @@ export class RegistrosCanal4{
      */
     escribirControl(dato){
         const disparar = (dato & 0x80) == 0x80; // Bit 7
+        const longitudActivadaAntes = this.longitudActivada;
         this.longitudActivada = (dato & 0x40) == 0x40 // Bit 6
+        if(!longitudActivadaAntes && this.longitudActivada && this.ciclosLongitudMod < 8192){
+            this.ciclosLongitud++;
+            if(this.ciclosLongitud >= 64 && this.activado){
+                this.activado = false;
+                this.sonido.desactivarCanal(3);
+            }
+        }
         // Bits 5-0 sin usar
         if(disparar){
             if(this.ciclosLongitud >= 64) this.ciclosLongitud = 0;
@@ -152,9 +160,10 @@ export class RegistrosCanal4{
      * @param {number} ciclos 
      */
     enCiclos(ciclos){
+        const ciclosLongitud = Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
+        this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
         if(this.longitudActivada){
-            this.ciclosLongitud += Math.floor((this.ciclosLongitudMod + ciclos) / 16384);
-            this.ciclosLongitudMod = (this.ciclosLongitudMod + ciclos) % 16384;
+            this.ciclosLongitud += ciclosLongitud;
             if(this.ciclosLongitud >= 64 && this.activado){
                 this.activado = false;
                 this.sonido.desactivarCanal(3);

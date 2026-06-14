@@ -190,6 +190,10 @@ test('RegistrosAudio conserva NR50/NR51 y refleja maestro y canales en NR52', ()
     regAud.escribirAudioControlMaestro(0);
     assert.equal(regAud.leerAudioControlMaestro(), 0x70);
     assert.deepEqual(sonido.llamadas.at(-1), ['desactivarMaestro']);
+    assert.equal(regCnl1.ciclosLongitudMod, 0);
+    assert.equal(regCnl2.ciclosLongitudMod, 0);
+    assert.equal(regCnl3.ciclosLongitudMod, 0);
+    assert.equal(regCnl4.ciclosLongitudMod, 0);
 
     regAud.escribirAudioControlMaestro(0xff);
     assert.equal(regAud.leerAudioControlMaestro(), 0xf0);
@@ -203,6 +207,7 @@ test('La longitud limpia el estado de NR52 exactamente al llegar a cero', () => 
             canal: regCnl1,
             mascara: 0x01,
             preparar() {
+                regCnl1.ciclosLongitudMod = 8192;
                 regCnl1.escribirCicloYTemporizador(0x3c);
                 regCnl1.escribirVolumenYEnvoltorio(0xf0);
                 regCnl1.escribirPeriodoAltoYControl(0xc0);
@@ -212,6 +217,7 @@ test('La longitud limpia el estado de NR52 exactamente al llegar a cero', () => 
             canal: regCnl2,
             mascara: 0x02,
             preparar() {
+                regCnl2.ciclosLongitudMod = 8192;
                 regCnl2.escribirCicloYTemporizador(0x3c);
                 regCnl2.escribirVolumenYEnvoltorio(0xf0);
                 regCnl2.escribirPeriodoAltoYControl(0xc0);
@@ -221,6 +227,7 @@ test('La longitud limpia el estado de NR52 exactamente al llegar a cero', () => 
             canal: regCnl3,
             mascara: 0x04,
             preparar() {
+                regCnl3.ciclosLongitudMod = 8192;
                 regCnl3.escribirActivadoDAC(0x80);
                 regCnl3.escribirTemporizador(0xfc);
                 regCnl3.escribirPeriodoAltoYControl(0xc0);
@@ -230,6 +237,7 @@ test('La longitud limpia el estado de NR52 exactamente al llegar a cero', () => 
             canal: regCnl4,
             mascara: 0x08,
             preparar() {
+                regCnl4.ciclosLongitudMod = 8192;
                 regCnl4.escribirTemporizador(0x3c);
                 regCnl4.escribirVolumenYEnvoltorio(0xf0);
                 regCnl4.escribirControl(0xc0);
@@ -246,6 +254,51 @@ test('La longitud limpia el estado de NR52 exactamente al llegar a cero', () => 
 
         canal.enCiclos(16384);
         assert.equal(regAud.leerAudioControlMaestro() & mascara, 0);
+    }
+});
+
+test('Habilitar longitud solo la relojiza en la primera mitad del periodo', () => {
+    const casos = [
+        {
+            crear: () => new RegistrosCanal1(undefined, new SonidoFake()),
+            cargar: (canal) => canal.escribirCicloYTemporizador(0x3e),
+            habilitar: (canal) => canal.escribirPeriodoAltoYControl(0x40),
+        },
+        {
+            crear: () => new RegistrosCanal2(undefined, new SonidoFake()),
+            cargar: (canal) => canal.escribirCicloYTemporizador(0x3e),
+            habilitar: (canal) => canal.escribirPeriodoAltoYControl(0x40),
+        },
+        {
+            crear: () => new RegistrosCanal3(undefined, new SonidoFake()),
+            cargar: (canal) => canal.escribirTemporizador(0xfe),
+            habilitar: (canal) => canal.escribirPeriodoAltoYControl(0x40),
+        },
+        {
+            crear: () => new RegistrosCanal4(undefined, new SonidoFake()),
+            cargar: (canal) => canal.escribirTemporizador(0x3e),
+            habilitar: (canal) => canal.escribirControl(0x40),
+        },
+    ];
+
+    for (const { crear, cargar, habilitar } of casos) {
+        const primeraMitad = crear();
+        cargar(primeraMitad);
+        primeraMitad.ciclosLongitudMod = 7900;
+        habilitar(primeraMitad);
+        assert.equal(
+            primeraMitad.ciclosLongitud,
+            primeraMitad.temporizadorInicial + 1
+        );
+
+        const segundaMitad = crear();
+        cargar(segundaMitad);
+        segundaMitad.ciclosLongitudMod = 8256;
+        habilitar(segundaMitad);
+        assert.equal(
+            segundaMitad.ciclosLongitud,
+            segundaMitad.temporizadorInicial
+        );
     }
 });
 
