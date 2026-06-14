@@ -249,9 +249,11 @@ test('CPU cubre todas las variantes auxiliares de carga', () => {
     memoria.escribir8Bits(0xff80, 0x41);
     cpu.ld_r_mff00r_8b(A, C);
     assert.equal(cpu.registros.R[A], 0x41);
+    assert.equal(cpu.ciclos, 8);
     cpu.registros.R[B] = 0x52;
     cpu.ld_mff00r_r_8b(C, B);
     assert.equal(memoria.leer8Bits(0xff80), 0x52);
+    assert.equal(cpu.ciclos, 8);
 
     cpu.registros.PC = 0xc000;
     memoria.escribir16Bits(0xc000, 0xc200);

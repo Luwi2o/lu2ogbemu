@@ -153,7 +153,7 @@ export class CPU{
         this.ld_r_mff00r_8b = (regd, regmem) => {
             var i = 0xFF00 + this.registros.R[regmem];
             this.registros.R[regd] = this.memoria.leer8Bits(i);
-            this.ciclos = 12;
+            this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("ld_r_mff00r_8b " + this.nombreR(regd) +", (FF00+" + this.nombreR(regmem)+ ")")
             return;
         }
@@ -167,7 +167,7 @@ export class CPU{
         this.ld_mff00r_r_8b = (regmem, reg) => {
             var i = 0xFF00 + this.registros.R[regmem];
             this.memoria.escribir8Bits(i, this.registros.R[reg]);
-            this.ciclos = 12;
+            this.ciclos = 8;
             this.cPUDebug.instruccionStr = ("ld_mff00r_r_8b (FF00+" + this.nombreR(regmem)+ "), " + this.nombreR(reg))
             return;
         }
