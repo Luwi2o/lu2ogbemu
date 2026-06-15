@@ -61,6 +61,42 @@ function avanzarCiclosPantalla(pantalla, ciclos) {
     }
 }
 
+function crearPantallaParaRender() {
+    const regLCD = new RegistrosLCD();
+    const pantalla = Object.create(Pantalla.prototype);
+
+    Object.assign(pantalla, {
+        regLCD,
+        linea: 0,
+        lineaVentana: 0,
+        ventanaVisible: false,
+        windowXLinea: 0,
+        scrollXLinea: 0,
+        scrollYLinea: 0,
+        BGTileMapAreaLinea: false,
+        BGWindowTileDataAreaLinea: false,
+        debugColorearCapas: false,
+        valorColor32: Uint32Array.of(
+            0xffffffff,
+            0xff111111,
+            0xff777777,
+            0xff000000
+        ),
+        lcd: {
+            data: new Uint8ClampedArray(160 * 144 * 4),
+        },
+        _lcd32: null,
+        _bgIdx: new Uint8Array(160),
+        _mask8: Uint8Array.of(0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01),
+    });
+
+    regLCD.lineaY = 0;
+    regLCD.objEnable = true;
+    regLCD.BGWindowEnable = false;
+
+    return { pantalla, regLCD };
+}
+
 test('El divisor acumula ciclos incluso con TIMA desactivado', () => {
     const registros = new RegistrosInterrupciones();
     const interrupciones = new Interrupciones(registros);
@@ -119,6 +155,62 @@ test('Al encender LCD, LY cambia entre los delay 109 y 110 de Blargg', () => {
             assert.equal(regLCD.lineaY, 2, 'las líneas normales duran 456 dots');
         }
     }
+});
+
+test('Los sprites DMG priorizan menor X y después menor índice OAM', () => {
+    const { pantalla, regLCD } = crearPantallaParaRender();
+    const primero = regLCD.objetos[0];
+    const segundo = regLCD.objetos[1];
+
+    primero.y = segundo.y = 16;
+    primero.x = segundo.x = 20;
+    primero.tileIndice = 1;
+    segundo.tileIndice = 2;
+
+    regLCD.vRAM[1 * 16] = 0xff;
+    regLCD.vRAM[2 * 16] = 0xff;
+    regLCD.vRAM[(2 * 16) + 1] = 0xff;
+
+    pantalla.dibujarLinea();
+    assert.equal(pantalla._lcd32[12], 0xff111111);
+
+    primero.x = 21;
+    segundo.x = 20;
+    pantalla.dibujarLinea();
+    assert.equal(pantalla._lcd32[12], 0xff000000);
+});
+
+test('Un píxel OBJ transparente permite ver el siguiente sprite', () => {
+    const { pantalla, regLCD } = crearPantallaParaRender();
+    const primero = regLCD.objetos[0];
+    const segundo = regLCD.objetos[1];
+
+    primero.y = segundo.y = 16;
+    primero.x = segundo.x = 20;
+    primero.tileIndice = 1;
+    segundo.tileIndice = 2;
+    regLCD.vRAM[2 * 16] = 0xff;
+
+    pantalla.dibujarLinea();
+
+    assert.equal(pantalla._lcd32[12], 0xff111111);
+});
+
+test('La coordenada X de OAM coloca el sprite exactamente en X menos 8', () => {
+    const { pantalla, regLCD } = crearPantallaParaRender();
+    const objeto = regLCD.objetos[0];
+
+    objeto.y = 16;
+    objeto.x = 20;
+    objeto.tileIndice = 1;
+    regLCD.vRAM[1 * 16] = 0x81;
+
+    pantalla.dibujarLinea();
+
+    assert.equal(pantalla._lcd32[11], 0xffffffff);
+    assert.equal(pantalla._lcd32[12], 0xff111111);
+    assert.equal(pantalla._lcd32[19], 0xff111111);
+    assert.equal(pantalla._lcd32[20], 0xffffffff);
 });
 
 test('RegistrosBotones selecciona grupos y combina entradas activas en bajo', () => {

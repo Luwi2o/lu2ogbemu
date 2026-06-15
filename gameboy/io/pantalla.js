@@ -369,6 +369,19 @@ export class Pantalla{
                     objetosEnLinea[totalObjetosEnLinea++] = objeto;
                 }
             }
+
+            // En DMG la prioridad entre los 10 candidatos depende primero de X
+            // y, cuando X coincide, del orden original en OAM. La inserción es
+            // estable, por lo que conserva ese orden en los empates.
+            for(let i=1; i<totalObjetosEnLinea; i++){
+                const objeto = objetosEnLinea[i];
+                let j = i - 1;
+                while(j >= 0 && (objetosEnLinea[j].x | 0) > (objeto.x | 0)){
+                    objetosEnLinea[j + 1] = objetosEnLinea[j];
+                    j--;
+                }
+                objetosEnLinea[j + 1] = objeto;
+            }
         }
 
         // Condiciones de ventana
@@ -543,9 +556,9 @@ export class Pantalla{
                 for (let i = 0; i < totalObjetosEnLinea; i++) {
                     const objeto = objetosEnLinea[i];
                     const xObjeto = objeto.x | 0;
-                    // En OAM, X está desplazada 8 pixels. La comparación
-                    // conserva la misma convención que el cálculo xObjeto - 7.
-                    if (xObjeto < x || xObjeto >= (x + 8)) continue;
+                    // La coordenada OAM sitúa el borde izquierdo en X - 8.
+                    const xPantallaObjeto = xObjeto - 8;
+                    if (x < xPantallaObjeto || x >= xPantallaObjeto + 8) continue;
 
                     let yRelativaObjeto = lineaLCD - ((objeto.y | 0) - 16);
                     if (objeto.yFlip) yRelativaObjeto = (alturaObj - 1) - yRelativaObjeto;
@@ -554,9 +567,9 @@ export class Pantalla{
                     // Los flips no cambian el tile elegido, solo el pixel de la
                     // fila que se consulta dentro de ese tile.
                     if (!objeto.xFlip) {
-                        xRelativaObjeto = x - (xObjeto - 7);
+                        xRelativaObjeto = x - xPantallaObjeto;
                     } else {
-                        xRelativaObjeto = 7 - (x - (xObjeto - 7));
+                        xRelativaObjeto = 7 - (x - xPantallaObjeto);
                     }
 
                     const tileBaseObjeto = (alturaObj === 16) ? (objeto.tileIndice & 0xFE) : (objeto.tileIndice | 0);
@@ -581,6 +594,10 @@ export class Pantalla{
                             ? coloresDebugCapas.sprite[paletaObjeto[indiceColor]]
                             : colores32[paletaObjeto[indiceColor]];
                     }
+
+                    // El primer píxel OBJ no transparente gana. Si queda detrás
+                    // del BG por prioridad, un objeto inferior tampoco se ve.
+                    break;
                 }
             }
         }
